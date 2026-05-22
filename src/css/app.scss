@@ -1,0 +1,13 @@
+.btn-electrofrio {
+  background: linear-gradient(135deg, #0d47a1, #c62828);
+  color: white;
+  font-weight: 800;
+  border-radius: 16px;
+  box-shadow: 0 8px 18px rgba(13, 71, 161, 0.25);
+  transition: all 0.25s ease;
+}
+
+.btn-electrofrio:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(198, 40, 40, 0.30);
+}
