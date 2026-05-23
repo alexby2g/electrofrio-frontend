@@ -1,7 +1,7 @@
 <template>
   <q-page class="q-pa-md tecnicos-page">
 
-    <div class="row justify-between items-center q-mb-md">
+    <div class="row justify-between items-center q-mb-md page-header">
       <div>
         <div class="text-h5 text-primary text-weight-bold">
           Técnicos
@@ -13,7 +13,7 @@
       </div>
 
       <q-btn
-        class="btn-electrofrio"
+        class="btn-electrofrio btn-page"
         icon="add"
         label="Nuevo Técnico"
         @click="abrirDialog"
@@ -31,7 +31,6 @@
       no-data-label="No hay técnicos registrados"
     >
 
-      <!-- TECNICO -->
       <template #body-cell-tecnico="props">
         <q-td :props="props">
 
@@ -46,7 +45,6 @@
         </q-td>
       </template>
 
-      <!-- INFO -->
       <template #body-cell-info="props">
         <q-td :props="props">
 
@@ -61,7 +59,6 @@
         </q-td>
       </template>
 
-      <!-- ACCIONES -->
       <template #body-cell-acciones="props">
         <q-td :props="props" class="q-gutter-xs text-center">
 
@@ -92,7 +89,6 @@
 
     </q-table>
 
-    <!-- DIALOG -->
     <q-dialog v-model="dialog" persistent>
 
       <q-card class="dialog-card">
@@ -109,36 +105,40 @@
 
         </q-card-section>
 
-        <q-card-section class="q-gutter-md q-pt-lg">
+        <q-scroll-area class="dialog-scroll">
 
-          <q-input
-            v-model.trim="form.nombre"
-            label="Nombre"
-            outlined
-            dense
-            rounded
-            :rules="[val => !!val || 'El nombre es obligatorio']"
-          />
+          <q-card-section class="q-gutter-md q-pt-lg">
 
-          <q-input
-            v-model.trim="form.telefono"
-            label="Teléfono"
-            outlined
-            dense
-            rounded
-          />
+            <q-input
+              v-model.trim="form.nombre"
+              label="Nombre"
+              outlined
+              dense
+              rounded
+              :rules="[val => !!val || 'El nombre es obligatorio']"
+            />
 
-          <q-input
-            v-model.trim="form.especialidad"
-            label="Especialidad"
-            outlined
-            dense
-            rounded
-          />
+            <q-input
+              v-model.trim="form.telefono"
+              label="Teléfono"
+              outlined
+              dense
+              rounded
+            />
 
-        </q-card-section>
+            <q-input
+              v-model.trim="form.especialidad"
+              label="Especialidad"
+              outlined
+              dense
+              rounded
+            />
 
-        <q-card-actions align="right" class="q-pb-md q-pr-md">
+          </q-card-section>
+
+        </q-scroll-area>
+
+        <q-card-actions align="right" class="dialog-actions">
 
           <q-btn
             flat
@@ -206,7 +206,6 @@ export default {
   },
 
   methods: {
-
     formVacio() {
       return {
         id: null,
@@ -223,7 +222,6 @@ export default {
     },
 
     mensajeError(error, defecto) {
-
       const errores = error.response?.data?.errors
 
       if (errores) {
@@ -238,17 +236,13 @@ export default {
     },
 
     async cargar() {
-
       this.loading = true
 
       try {
-
         const res = await api.get('/tecnicos')
 
         this.tecnicos = this.obtenerLista(res)
-
       } catch (error) {
-
         this.$q.notify({
           type: 'negative',
           message: this.mensajeError(
@@ -256,11 +250,8 @@ export default {
             'Error al cargar técnicos'
           )
         })
-
       } finally {
-
         this.loading = false
-
       }
     },
 
@@ -271,9 +262,7 @@ export default {
     },
 
     validar() {
-
       if (!this.form.nombre) {
-
         this.$q.notify({
           type: 'warning',
           message: 'El nombre del técnico es obligatorio'
@@ -286,13 +275,11 @@ export default {
     },
 
     async guardar() {
-
       if (!this.validar()) return
 
       this.submitting = true
 
       try {
-
         const payload = {
           nombre: this.form.nombre,
           telefono: this.form.telefono || null,
@@ -315,9 +302,7 @@ export default {
         this.dialog = false
 
         await this.cargar()
-
       } catch (error) {
-
         this.$q.notify({
           type: 'negative',
           message: this.mensajeError(
@@ -325,16 +310,12 @@ export default {
             'Error al guardar técnico'
           )
         })
-
       } finally {
-
         this.submitting = false
-
       }
     },
 
     editar(row) {
-
       this.form = {
         id: row.id,
         nombre: row.nombre || '',
@@ -347,7 +328,6 @@ export default {
     },
 
     eliminar(id) {
-
       const tecnico = this.tecnicos.find(
         t => Number(t.id) === Number(id)
       )
@@ -358,11 +338,8 @@ export default {
         cancel: true,
         persistent: true
       }).onOk(async () => {
-
         try {
-
           if (tecnico) {
-
             const historial = JSON.parse(
               localStorage.getItem('tecnicos_eliminados') || '[]'
             )
@@ -386,9 +363,7 @@ export default {
           })
 
           await this.cargar()
-
         } catch (error) {
-
           this.$q.notify({
             type: 'negative',
             message: this.mensajeError(
@@ -396,12 +371,9 @@ export default {
               'No se pudo eliminar el técnico'
             )
           })
-
         }
-
       })
     }
-
   }
 }
 </script>
@@ -433,13 +405,62 @@ export default {
 }
 
 .dialog-card {
-  min-width: 420px;
+  width: 420px;
+  max-width: 95vw;
+  max-height: 90vh;
   border-radius: 22px;
   overflow: hidden;
+}
+
+.dialog-scroll {
+  max-height: 65vh;
+}
+
+.dialog-actions {
+  padding: 12px 18px 18px 18px;
+  background: white;
+  border-top: 1px solid #eeeeee;
 }
 
 .dialog-header {
   background: linear-gradient(135deg, #0d47a1, #c62828);
   color: white;
+}
+
+@media (max-width: 600px) {
+  .tecnicos-page {
+    padding: 10px;
+  }
+
+  .page-header {
+    gap: 12px;
+  }
+
+  .btn-page {
+    width: 100%;
+  }
+
+  .dialog-card {
+    width: 95vw;
+    max-width: 95vw;
+    border-radius: 18px;
+  }
+
+  .dialog-scroll {
+    max-height: 70vh;
+  }
+
+  .dialog-actions {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .dialog-actions .q-btn {
+    flex: 1;
+  }
+
+  .tabla-electrofrio {
+    border-radius: 16px;
+  }
 }
 </style>

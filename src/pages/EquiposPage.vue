@@ -1,6 +1,6 @@
 <template>
   <q-page class="q-pa-md equipos-page">
-    <div class="row justify-between items-center q-mb-md">
+    <div class="row justify-between items-center q-mb-md page-header">
       <div>
         <div class="text-h5 text-primary text-weight-bold">
           Gestión de Equipos
@@ -12,7 +12,7 @@
       </div>
 
       <q-btn
-        class="btn-electrofrio"
+        class="btn-electrofrio btn-page"
         icon="add"
         label="Nuevo Equipo"
         @click="abrirDialog"
@@ -88,35 +88,58 @@
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
-        <q-card-section class="q-gutter-md q-pt-lg">
-          <q-select
-            v-model="form.cliente_id"
-            :options="clientes"
-            label="Cliente propietario"
-            option-label="nombre"
-            option-value="id"
-            emit-value
-            map-options
-            outlined
-            dense
-            rounded
-          />
-
-          <q-select
-            v-model="form.tipo"
-            :options="tiposEquipo"
-            label="Tipo de equipo"
-            outlined
-            dense
-            rounded
-          />
-
-          <div class="row q-col-gutter-sm">
+        <q-scroll-area class="dialog-scroll">
+          <q-card-section class="q-gutter-md q-pt-lg">
             <q-select
-              class="col-6"
-              v-model="form.marca"
-              :options="marcas"
-              label="Marca"
+              v-model="form.cliente_id"
+              :options="clientes"
+              label="Cliente propietario"
+              option-label="nombre"
+              option-value="id"
+              emit-value
+              map-options
+              outlined
+              dense
+              rounded
+            />
+
+            <q-select
+              v-model="form.tipo"
+              :options="tiposEquipo"
+              label="Tipo de equipo"
+              outlined
+              dense
+              rounded
+            />
+
+            <div class="row q-col-gutter-sm form-row-responsive">
+              <q-select
+                class="col-6"
+                v-model="form.marca"
+                :options="marcas"
+                label="Marca"
+                outlined
+                dense
+                rounded
+                use-input
+                input-debounce="0"
+                new-value-mode="add-unique"
+              />
+
+              <q-input
+                class="col-6"
+                v-model.trim="form.modelo"
+                label="Modelo"
+                outlined
+                dense
+                rounded
+              />
+            </div>
+
+            <q-select
+              v-model="form.capacidad"
+              :options="capacidades"
+              label="Capacidad"
               outlined
               dense
               rounded
@@ -124,31 +147,10 @@
               input-debounce="0"
               new-value-mode="add-unique"
             />
+          </q-card-section>
+        </q-scroll-area>
 
-            <q-input
-              class="col-6"
-              v-model.trim="form.modelo"
-              label="Modelo"
-              outlined
-              dense
-              rounded
-            />
-          </div>
-
-          <q-select
-            v-model="form.capacidad"
-            :options="capacidades"
-            label="Capacidad"
-            outlined
-            dense
-            rounded
-            use-input
-            input-debounce="0"
-            new-value-mode="add-unique"
-          />
-        </q-card-section>
-
-        <q-card-actions align="right" class="q-pb-md q-pr-md">
+        <q-card-actions align="right" class="dialog-actions">
           <q-btn
             flat
             label="Cancelar"
@@ -412,13 +414,74 @@ export default {
 }
 
 .dialog-card {
-  min-width: 460px;
+  width: 460px;
+  max-width: 95vw;
+  max-height: 90vh;
   border-radius: 22px;
   overflow: hidden;
+}
+
+.dialog-scroll {
+  max-height: 65vh;
+}
+
+.dialog-actions {
+  padding: 12px 18px 18px 18px;
+  background: white;
+  border-top: 1px solid #eeeeee;
 }
 
 .dialog-header {
   background: linear-gradient(135deg, #0d47a1, #c62828);
   color: white;
+}
+
+@media (max-width: 600px) {
+  .equipos-page {
+    padding: 10px;
+  }
+
+  .page-header {
+    gap: 12px;
+  }
+
+  .btn-page {
+    width: 100%;
+  }
+
+  .dialog-card {
+    width: 95vw;
+    max-width: 95vw;
+    border-radius: 18px;
+  }
+
+  .dialog-scroll {
+    max-height: 70vh;
+  }
+
+  .form-row-responsive {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-row-responsive > div,
+  .form-row-responsive .col-6 {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+  }
+
+  .dialog-actions {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .dialog-actions .q-btn {
+    flex: 1;
+  }
+
+  .tabla-electrofrio {
+    border-radius: 16px;
+  }
 }
 </style>

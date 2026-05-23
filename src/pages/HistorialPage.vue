@@ -1,10 +1,11 @@
 <template>
   <q-page class="historial-page">
     <q-scroll-area class="historial-scroll">
-      <div class="q-pa-md">
-        <div class="row justify-between items-center q-mb-lg">
+      <div class="q-pa-md historial-content">
+
+        <div class="row justify-between items-center q-mb-lg page-header">
           <div>
-            <div class="text-h4 text-weight-bold text-primary">
+            <div class="text-h4 text-weight-bold text-primary titulo-historial">
               Historial
             </div>
 
@@ -14,7 +15,7 @@
           </div>
 
           <q-btn
-            class="btn-electrofrio"
+            class="btn-electrofrio btn-page"
             icon="delete_sweep"
             label="Limpiar historial"
             @click="limpiarHistorial"
@@ -45,7 +46,7 @@
               <q-list separator>
                 <q-item
                   v-for="(item, index) in grupo.items"
-                  :key="item.fecha_eliminacion"
+                  :key="`${grupo.key}-${index}`"
                 >
                   <q-item-section>
                     <q-item-label class="text-weight-bold text-primary">
@@ -60,7 +61,7 @@
                       Eliminado: {{ item.fecha_eliminacion }}
                     </q-item-label>
 
-                    <div class="q-mt-sm row q-gutter-sm">
+                    <div class="q-mt-sm row q-gutter-sm acciones-historial">
                       <q-btn
                         size="sm"
                         icon="restore"
@@ -86,7 +87,7 @@
                 </q-item>
 
                 <q-item v-if="grupo.items.length === 0">
-                  <q-item-section class="text-grey text-center">
+                  <q-item-section class="text-grey text-center empty-item">
                     Sin registros
                   </q-item-section>
                 </q-item>
@@ -94,6 +95,7 @@
             </q-card>
           </div>
         </div>
+
       </div>
     </q-scroll-area>
   </q-page>
@@ -363,5 +365,50 @@ export default {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.empty-item {
+  min-height: 80px;
+  display: flex;
+  justify-content: center;
+}
+
+@media (max-width: 600px) {
+  .historial-page {
+    height: calc(100vh - 60px);
+  }
+
+  .historial-content {
+    padding: 10px;
+  }
+
+  .page-header {
+    gap: 12px;
+  }
+
+  .titulo-historial {
+    font-size: 26px;
+  }
+
+  .btn-page {
+    width: 100%;
+  }
+
+  .historial-card {
+    border-radius: 18px;
+  }
+
+  .card-head {
+    padding: 14px;
+  }
+
+  .acciones-historial {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .acciones-historial .q-btn {
+    width: 100%;
+  }
 }
 </style>

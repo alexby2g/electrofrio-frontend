@@ -1,7 +1,7 @@
 <template>
   <q-page class="q-pa-md pagos-page">
 
-    <div class="row justify-between items-center q-mb-lg">
+    <div class="row justify-between items-center q-mb-lg page-header">
       <div>
         <div class="text-h5 text-primary text-weight-bold">
           Historial de Pagos
@@ -13,7 +13,7 @@
       </div>
 
       <q-btn
-        class="btn-electrofrio"
+        class="btn-electrofrio btn-page"
         icon="add"
         label="Registrar Pago"
         @click="abrirDialog"
@@ -22,8 +22,7 @@
 
     <q-card class="filtros-card q-mb-md">
       <q-card-section>
-        <div class="row q-col-gutter-md items-center">
-
+        <div class="row q-col-gutter-md items-center filtros-responsive">
           <div class="col-12 col-md-5">
             <q-input
               v-model="filtro"
@@ -76,7 +75,6 @@
               {{ pagosFiltrados.length }} pago(s)
             </q-chip>
           </div>
-
         </div>
       </q-card-section>
     </q-card>
@@ -96,7 +94,6 @@
 
       <template #body-cell-cliente="props">
         <q-td :props="props">
-
           <div class="text-weight-bold text-primary">
             {{ props.row.servicio?.cliente?.nombre || 'S/N' }}
           </div>
@@ -112,13 +109,11 @@
               :label="props.row.servicio?.tipo_servicio || 'Servicio'"
             />
           </div>
-
         </q-td>
       </template>
 
       <template #body-cell-pago="props">
         <q-td :props="props" class="text-center">
-
           <div class="text-h6 text-green-8 text-weight-bold">
             {{ Number(props.row.monto || 0).toFixed(2) }} Bs.
           </div>
@@ -132,13 +127,11 @@
             :color="colorEstado(props.row.estado)"
             :label="props.row.estado || 'Pendiente'"
           />
-
         </q-td>
       </template>
 
       <template #body-cell-fecha="props">
         <q-td :props="props" class="text-center">
-
           <div class="text-weight-bold">
             {{ props.row.fecha_pago || 'Sin fecha' }}
           </div>
@@ -146,13 +139,11 @@
           <div class="text-caption text-grey-7">
             Fecha de pago
           </div>
-
         </q-td>
       </template>
 
       <template #body-cell-acciones="props">
         <q-td :props="props" class="q-gutter-xs text-center">
-
           <q-btn
             size="sm"
             round
@@ -170,17 +161,13 @@
             icon="delete"
             @click="eliminar(props.row.id)"
           />
-
         </q-td>
       </template>
-
     </q-table>
 
     <q-dialog v-model="dialog" persistent>
       <q-card class="dialog-card">
-
         <q-card-section class="dialog-header row items-center">
-
           <div class="text-h6">
             {{ editando ? 'Editar Pago' : 'Registrar Pago' }}
           </div>
@@ -188,75 +175,73 @@
           <q-space />
 
           <q-btn icon="close" flat round dense v-close-popup />
-
         </q-card-section>
 
-        <q-card-section class="q-gutter-md q-pt-lg">
+        <q-scroll-area class="dialog-scroll">
+          <q-card-section class="q-gutter-md q-pt-lg">
+            <q-select
+              v-model="form.servicio_id"
+              :options="servicios"
+              label="Servicio / Orden"
+              :option-label="textoServicio"
+              option-value="id"
+              emit-value
+              map-options
+              outlined
+              dense
+              rounded
+              @update:model-value="setMontoServicio"
+            />
 
-          <q-select
-            v-model="form.servicio_id"
-            :options="servicios"
-            label="Servicio / Orden"
-            :option-label="textoServicio"
-            option-value="id"
-            emit-value
-            map-options
-            outlined
-            dense
-            rounded
-            @update:model-value="setMontoServicio"
-          />
+            <q-input
+              v-model.number="form.monto"
+              type="number"
+              label="Monto a Cobrar"
+              outlined
+              dense
+              rounded
+              suffix="Bs."
+            />
 
-          <q-input
-            v-model.number="form.monto"
-            type="number"
-            label="Monto a Cobrar"
-            outlined
-            dense
-            rounded
-            suffix="Bs."
-          />
+            <q-input
+              v-model="form.fecha_pago"
+              type="date"
+              label="Fecha de Pago"
+              outlined
+              dense
+              rounded
+            />
 
-          <q-input
-            v-model="form.fecha_pago"
-            type="date"
-            label="Fecha de Pago"
-            outlined
-            dense
-            rounded
-          />
+            <q-select
+              v-model="form.metodo_pago"
+              :options="['Efectivo', 'Transferencia', 'QR', 'Tigo Money']"
+              label="Método de Pago"
+              outlined
+              dense
+              rounded
+            />
 
-          <q-select
-            v-model="form.metodo_pago"
-            :options="['Efectivo', 'Transferencia', 'QR', 'Tigo Money']"
-            label="Método de Pago"
-            outlined
-            dense
-            rounded
-          />
+            <q-select
+              v-model="form.estado"
+              :options="['Completado', 'Pendiente', 'Anulado']"
+              label="Estado del Pago"
+              outlined
+              dense
+              rounded
+            />
 
-          <q-select
-            v-model="form.estado"
-            :options="['Completado', 'Pendiente', 'Anulado']"
-            label="Estado del Pago"
-            outlined
-            dense
-            rounded
-          />
+            <q-input
+              v-model.trim="form.observaciones"
+              type="textarea"
+              label="Observaciones"
+              outlined
+              dense
+              rounded
+            />
+          </q-card-section>
+        </q-scroll-area>
 
-          <q-input
-            v-model.trim="form.observaciones"
-            type="textarea"
-            label="Observaciones"
-            outlined
-            dense
-            rounded
-          />
-
-        </q-card-section>
-
-        <q-card-actions align="right" class="q-pb-md q-pr-md">
-
+        <q-card-actions align="right" class="dialog-actions">
           <q-btn
             flat
             label="Cancelar"
@@ -270,9 +255,7 @@
             @click="guardar"
             :loading="submitting"
           />
-
         </q-card-actions>
-
       </q-card>
     </q-dialog>
 
@@ -315,7 +298,6 @@ export default {
   },
 
   computed: {
-
     opcionesEstado() {
       return [
         { label: 'Todos', value: 'todos' },
@@ -336,17 +318,16 @@ export default {
     },
 
     pagosFiltrados() {
-
       let lista = [...this.pagos]
 
       if (this.filtro) {
-
         const texto = this.filtro.toLowerCase()
 
         lista = lista.filter(pago => {
           return (
             String(pago.servicio?.cliente?.nombre || '').toLowerCase().includes(texto) ||
             String(pago.metodo_pago || '').toLowerCase().includes(texto) ||
+            String(pago.estado || '').toLowerCase().includes(texto) ||
             String(pago.servicio?.tipo_servicio || '').toLowerCase().includes(texto)
           )
         })
@@ -373,7 +354,6 @@ export default {
   },
 
   methods: {
-
     colorEstado(estado) {
       if (estado === 'Completado') return 'green'
       if (estado === 'Pendiente') return 'orange'
@@ -415,15 +395,13 @@ export default {
     textoServicio(servicio) {
       if (!servicio) return 'S/N'
 
-      return `Orden #${servicio.id} - ${servicio.cliente?.nombre || 'Sin cliente'}`
+      return `Orden #${servicio.id} - ${servicio.cliente?.nombre || 'Sin cliente'} - ${servicio.tipo_servicio || 'Servicio'}`
     },
 
     async initData() {
-
       this.loading = true
 
       try {
-
         const [resPagos, resServicios] = await Promise.all([
           api.get('/pagos'),
           api.get('/servicios')
@@ -431,18 +409,13 @@ export default {
 
         this.pagos = this.obtenerLista(resPagos)
         this.servicios = this.obtenerLista(resServicios)
-
       } catch (error) {
-
         this.$q.notify({
           type: 'negative',
           message: this.mensajeError(error, 'Error al cargar pagos')
         })
-
       } finally {
-
         this.loading = false
-
       }
     },
 
@@ -463,7 +436,6 @@ export default {
     },
 
     validar() {
-
       if (!this.form.servicio_id) {
         this.$q.notify({
           type: 'warning',
@@ -472,17 +444,31 @@ export default {
         return false
       }
 
+      if (Number(this.form.monto) < 0) {
+        this.$q.notify({
+          type: 'warning',
+          message: 'El monto no puede ser negativo'
+        })
+        return false
+      }
+
+      if (!this.form.fecha_pago) {
+        this.$q.notify({
+          type: 'warning',
+          message: 'La fecha de pago es obligatoria'
+        })
+        return false
+      }
+
       return true
     },
 
     async guardar() {
-
       if (!this.validar()) return
 
       this.submitting = true
 
       try {
-
         const payload = {
           servicio_id: this.form.servicio_id,
           monto: Number(this.form.monto || 0),
@@ -508,23 +494,17 @@ export default {
         this.dialog = false
 
         await this.initData()
-
       } catch (error) {
-
         this.$q.notify({
           type: 'negative',
           message: this.mensajeError(error, 'Error al guardar pago')
         })
-
       } finally {
-
         this.submitting = false
-
       }
     },
 
     editar(row) {
-
       this.form = {
         id: row.id,
         servicio_id: row.servicio_id,
@@ -540,7 +520,6 @@ export default {
     },
 
     eliminar(id) {
-
       const pago = this.pagos.find(
         p => Number(p.id) === Number(id)
       )
@@ -551,11 +530,8 @@ export default {
         cancel: true,
         persistent: true
       }).onOk(async () => {
-
         try {
-
           if (pago) {
-
             const historial = JSON.parse(
               localStorage.getItem('pagos_eliminados') || '[]'
             )
@@ -579,9 +555,7 @@ export default {
           })
 
           await this.initData()
-
         } catch (error) {
-
           this.$q.notify({
             type: 'negative',
             message: this.mensajeError(
@@ -589,12 +563,9 @@ export default {
               'No se pudo eliminar el pago'
             )
           })
-
         }
-
       })
     }
-
   }
 }
 </script>
@@ -637,13 +608,73 @@ export default {
 }
 
 .dialog-card {
-  min-width: 460px;
+  width: 460px;
+  max-width: 95vw;
+  max-height: 90vh;
   border-radius: 22px;
   overflow: hidden;
+}
+
+.dialog-scroll {
+  max-height: 65vh;
+}
+
+.dialog-actions {
+  padding: 12px 18px 18px 18px;
+  background: white;
+  border-top: 1px solid #eeeeee;
 }
 
 .dialog-header {
   background: linear-gradient(135deg, #0d47a1, #c62828);
   color: white;
+}
+
+@media (max-width: 600px) {
+  .pagos-page {
+    padding: 10px;
+  }
+
+  .page-header {
+    gap: 12px;
+  }
+
+  .btn-page {
+    width: 100%;
+  }
+
+  .filtros-responsive {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .filtros-responsive > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+  }
+
+  .dialog-card {
+    width: 95vw;
+    max-width: 95vw;
+    border-radius: 18px;
+  }
+
+  .dialog-scroll {
+    max-height: 70vh;
+  }
+
+  .dialog-actions {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .dialog-actions .q-btn {
+    flex: 1;
+  }
+
+  .tabla-electrofrio {
+    border-radius: 16px;
+  }
 }
 </style>

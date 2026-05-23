@@ -1,15 +1,19 @@
 <template>
   <q-page class="q-pa-md clientes-page">
-    <div class="row justify-between items-center q-mb-md">
+
+    <div class="row justify-between items-center q-mb-md page-header">
       <div>
-        <div class="text-h5 text-primary text-weight-bold">Clientes</div>
+        <div class="text-h5 text-primary text-weight-bold">
+          Clientes
+        </div>
+
         <div class="text-caption text-grey-7">
           Registro de clientes de Electro Frío
         </div>
       </div>
 
       <q-btn
-        class="btn-electrofrio"
+        class="btn-electrofrio btn-page"
         icon="add"
         label="Nuevo Cliente"
         @click="abrirDialog"
@@ -18,7 +22,8 @@
 
     <q-card class="filtros-card q-mb-md">
       <q-card-section>
-        <div class="row q-col-gutter-md items-center">
+        <div class="row q-col-gutter-md items-center filtros-responsive">
+
           <div class="col-12 col-md-6">
             <q-input
               v-model="filtro"
@@ -58,6 +63,7 @@
               {{ clientesFiltrados.length }} cliente(s)
             </q-chip>
           </div>
+
         </div>
       </q-card-section>
     </q-card>
@@ -74,8 +80,10 @@
       :pagination="pagination"
       :rows-per-page-options="[5, 10, 15, 20, 0]"
     >
+
       <template #body-cell-cliente="props">
         <q-td :props="props">
+
           <div class="row items-center no-wrap">
             <q-avatar class="avatar-cliente q-mr-sm" size="42px">
               {{ inicialCliente(props.row.nombre) }}
@@ -85,19 +93,23 @@
               <div class="text-weight-bold text-primary">
                 {{ props.row.nombre }}
               </div>
+
               <div class="text-caption text-grey-7">
                 Cliente registrado
               </div>
             </div>
           </div>
+
         </q-td>
       </template>
 
       <template #body-cell-contacto="props">
         <q-td :props="props">
+
           <div>
             📞 {{ props.row.telefono || 'Sin teléfono' }}
           </div>
+
           <div class="text-caption text-grey-7">
             📍 {{ props.row.direccion || 'Sin dirección' }}
           </div>
@@ -109,11 +121,13 @@
               :label="props.row.telefono ? 'Con contacto' : 'Sin contacto'"
             />
           </div>
+
         </q-td>
       </template>
 
       <template #body-cell-acciones="props">
         <q-td :props="props" class="q-gutter-xs text-center">
+
           <q-btn
             size="sm"
             round
@@ -135,12 +149,15 @@
           >
             <q-tooltip>Eliminar</q-tooltip>
           </q-btn>
+
         </q-td>
       </template>
+
     </q-table>
 
     <q-dialog v-model="dialog" persistent>
       <q-card class="dialog-card">
+
         <q-card-section class="dialog-header row items-center">
           <div class="text-h6">
             {{ editando ? 'Editar Cliente' : 'Nuevo Cliente' }}
@@ -151,35 +168,47 @@
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
-        <q-card-section class="q-gutter-md q-pt-lg">
-          <q-input
-            v-model.trim="form.nombre"
-            label="Nombre completo"
-            outlined
-            dense
-            rounded
-            :rules="[val => !!val || 'El nombre es obligatorio']"
-          />
+        <q-scroll-area class="dialog-scroll">
 
-          <q-input
-            v-model.trim="form.telefono"
-            label="Teléfono"
-            outlined
-            dense
-            rounded
-          />
+          <q-card-section class="q-gutter-md q-pt-lg">
 
-          <q-input
-            v-model.trim="form.direccion"
-            label="Dirección"
-            outlined
-            dense
-            rounded
-          />
-        </q-card-section>
+            <q-input
+              v-model.trim="form.nombre"
+              label="Nombre completo"
+              outlined
+              dense
+              rounded
+              :rules="[val => !!val || 'El nombre es obligatorio']"
+            />
 
-        <q-card-actions align="right" class="q-pb-md q-pr-md">
-          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+            <q-input
+              v-model.trim="form.telefono"
+              label="Teléfono"
+              outlined
+              dense
+              rounded
+            />
+
+            <q-input
+              v-model.trim="form.direccion"
+              label="Dirección"
+              outlined
+              dense
+              rounded
+            />
+
+          </q-card-section>
+
+        </q-scroll-area>
+
+        <q-card-actions align="right" class="dialog-actions">
+
+          <q-btn
+            flat
+            label="Cancelar"
+            color="grey-7"
+            v-close-popup
+          />
 
           <q-btn
             class="btn-electrofrio"
@@ -187,9 +216,12 @@
             @click="guardar"
             :loading="submitting"
           />
+
         </q-card-actions>
+
       </q-card>
     </q-dialog>
+
   </q-page>
 </template>
 
@@ -323,6 +355,7 @@ export default {
           type: 'warning',
           message: 'El nombre del cliente es obligatorio'
         })
+
         return false
       }
 
@@ -354,13 +387,18 @@ export default {
 
         this.dialog = false
         await this.cargar()
+
       } catch (error) {
+
         this.$q.notify({
           type: 'negative',
           message: this.mensajeError(error, 'Error al guardar cliente')
         })
+
       } finally {
+
         this.submitting = false
+
       }
     },
 
@@ -385,7 +423,9 @@ export default {
         cancel: true,
         persistent: true
       }).onOk(async () => {
+
         try {
+
           if (cliente) {
             const historial = JSON.parse(localStorage.getItem('clientes_eliminados') || '[]')
 
@@ -405,12 +445,16 @@ export default {
           })
 
           await this.cargar()
+
         } catch (error) {
+
           this.$q.notify({
             type: 'negative',
             message: this.mensajeError(error, 'No se pudo eliminar el cliente')
           })
+
         }
+
       })
     }
   }
@@ -465,13 +509,71 @@ export default {
 }
 
 .dialog-card {
-  min-width: 420px;
+  width: 420px;
+  max-width: 95vw;
+  max-height: 90vh;
   border-radius: 22px;
   overflow: hidden;
+}
+
+.dialog-scroll {
+  max-height: 65vh;
+}
+
+.dialog-actions {
+  padding: 12px 18px 18px 18px;
+  background: white;
+  border-top: 1px solid #eeeeee;
 }
 
 .dialog-header {
   background: linear-gradient(135deg, #0d47a1, #c62828);
   color: white;
+}
+
+@media (max-width: 600px) {
+
+  .clientes-page {
+    padding: 10px;
+  }
+
+  .page-header {
+    gap: 12px;
+  }
+
+  .btn-page {
+    width: 100%;
+  }
+
+  .filtros-responsive {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .filtros-responsive > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+  }
+
+  .dialog-card {
+    width: 95vw;
+    max-width: 95vw;
+    border-radius: 18px;
+  }
+
+  .dialog-actions {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .dialog-actions .q-btn {
+    flex: 1;
+  }
+
+  .tabla-electrofrio {
+    border-radius: 16px;
+  }
+
 }
 </style>

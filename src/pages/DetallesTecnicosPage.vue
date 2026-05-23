@@ -1,6 +1,6 @@
 <template>
   <q-page class="q-pa-md detalles-page">
-    <div class="row justify-between items-center q-mb-lg">
+    <div class="row justify-between items-center q-mb-lg page-header">
       <div>
         <div class="text-h5 text-primary text-weight-bold">
           Detalles Técnicos
@@ -11,7 +11,7 @@
       </div>
 
       <q-btn
-        class="btn-electrofrio"
+        class="btn-electrofrio btn-page"
         icon="add"
         label="Nuevo Registro"
         @click="abrirDialog"
@@ -64,8 +64,22 @@
 
       <template #body-cell-acciones="props">
         <q-td :props="props" class="q-gutter-xs text-center">
-          <q-btn size="sm" round unelevated color="primary" icon="edit" @click="editar(props.row)" />
-          <q-btn size="sm" round unelevated color="negative" icon="delete" @click="eliminar(props.row.id)" />
+          <q-btn
+            size="sm"
+            round
+            unelevated
+            color="primary"
+            icon="edit"
+            @click="editar(props.row)"
+          />
+          <q-btn
+            size="sm"
+            round
+            unelevated
+            color="negative"
+            icon="delete"
+            @click="eliminar(props.row.id)"
+          />
         </q-td>
       </template>
     </q-table>
@@ -80,61 +94,94 @@
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
-        <q-card-section class="q-gutter-md q-pt-lg">
-          <q-select
-            v-model="form.equipo_id"
-            :options="equipos"
-            label="Equipo"
-            :option-label="textoEquipo"
-            option-value="id"
-            emit-value
-            map-options
-            outlined
-            dense
-            rounded
-          />
-
-          <div class="row q-col-gutter-sm">
-            <q-input
-              class="col-6"
-              v-model.trim="form.gas_refrigerante"
-              label="Gas Refrigerante"
-              placeholder="R410A"
-              outlined
-              dense
-              rounded
-            />
-
+        <q-scroll-area class="dialog-scroll">
+          <q-card-section class="q-gutter-md q-pt-lg">
             <q-select
-              class="col-6"
-              v-model="form.voltaje"
-              :options="['110V', '220V', '380V']"
-              label="Voltaje"
+              v-model="form.equipo_id"
+              :options="equipos"
+              label="Equipo"
+              :option-label="textoEquipo"
+              option-value="id"
+              emit-value
+              map-options
               outlined
               dense
               rounded
             />
-          </div>
 
-          <div class="row q-col-gutter-sm">
-            <q-input class="col-4" v-model.number="form.amperaje_nominal" type="number" label="Amperaje" outlined dense rounded />
-            <q-input class="col-4" v-model.number="form.presion_succion_psi" type="number" label="PSI Succión" outlined dense rounded />
-            <q-input class="col-4" v-model.number="form.presion_descarga_psi" type="number" label="PSI Descarga" outlined dense rounded />
-          </div>
+            <div class="row q-col-gutter-sm form-row-responsive">
+              <q-input
+                class="col-6"
+                v-model.trim="form.gas_refrigerante"
+                label="Gas Refrigerante"
+                placeholder="R410A"
+                outlined
+                dense
+                rounded
+              />
 
-          <q-input
-            v-model.trim="form.observaciones_tecnicas"
-            type="textarea"
-            label="Observaciones Técnicas"
-            outlined
-            dense
-            rounded
-          />
-        </q-card-section>
+              <q-select
+                class="col-6"
+                v-model="form.voltaje"
+                :options="['110V', '220V', '380V']"
+                label="Voltaje"
+                outlined
+                dense
+                rounded
+              />
+            </div>
 
-        <q-card-actions align="right" class="q-pb-md q-pr-md">
+            <div class="row q-col-gutter-sm form-row-responsive">
+              <q-input
+                class="col-4"
+                v-model.number="form.amperaje_nominal"
+                type="number"
+                label="Amperaje"
+                outlined
+                dense
+                rounded
+              />
+
+              <q-input
+                class="col-4"
+                v-model.number="form.presion_succion_psi"
+                type="number"
+                label="PSI Succión"
+                outlined
+                dense
+                rounded
+              />
+
+              <q-input
+                class="col-4"
+                v-model.number="form.presion_descarga_psi"
+                type="number"
+                label="PSI Descarga"
+                outlined
+                dense
+                rounded
+              />
+            </div>
+
+            <q-input
+              v-model.trim="form.observaciones_tecnicas"
+              type="textarea"
+              label="Observaciones Técnicas"
+              outlined
+              dense
+              rounded
+            />
+          </q-card-section>
+        </q-scroll-area>
+
+        <q-card-actions align="right" class="dialog-actions">
           <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
-          <q-btn class="btn-electrofrio" :label="editando ? 'Actualizar' : 'Guardar'" @click="guardar" :loading="submitting" />
+          <q-btn
+            class="btn-electrofrio"
+            :label="editando ? 'Actualizar' : 'Guardar'"
+            @click="guardar"
+            :loading="submitting"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -357,13 +404,76 @@ export default {
 }
 
 .dialog-card {
-  min-width: 520px;
+  width: 520px;
+  max-width: 95vw;
+  max-height: 92vh;
   border-radius: 22px;
   overflow: hidden;
+}
+
+.dialog-scroll {
+  max-height: 68vh;
+}
+
+.dialog-actions {
+  padding: 12px 18px 18px 18px;
+  background: white;
+  border-top: 1px solid #eeeeee;
 }
 
 .dialog-header {
   background: linear-gradient(135deg, #0d47a1, #c62828);
   color: white;
+}
+
+@media (max-width: 600px) {
+  .detalles-page {
+    padding: 10px;
+  }
+
+  .page-header {
+    gap: 12px;
+  }
+
+  .btn-page {
+    width: 100%;
+  }
+
+  .dialog-card {
+    width: 95vw;
+    max-width: 95vw;
+    max-height: 95vh;
+    border-radius: 18px;
+  }
+
+  .dialog-scroll {
+    max-height: 70vh;
+  }
+
+  .form-row-responsive {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-row-responsive > div,
+  .form-row-responsive .col-4,
+  .form-row-responsive .col-6 {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+  }
+
+  .dialog-actions {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .dialog-actions .q-btn {
+    flex: 1;
+  }
+
+  .tabla-electrofrio {
+    border-radius: 16px;
+  }
 }
 </style>
