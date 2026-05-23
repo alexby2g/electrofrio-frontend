@@ -12,7 +12,7 @@
           @click="drawer = !drawer"
         />
 
-        <q-avatar class="logo-electrofrio q-mr-md">
+        <q-avatar class="logo-electrofrio q-mr-sm">
           <img src="../assets/logo-electrofrio.png">
         </q-avatar>
 
@@ -24,7 +24,9 @@
 
     <q-drawer
       v-model="drawer"
-      show-if-above
+      :show-if-above="!$q.screen.lt.md"
+      :overlay="$q.screen.lt.md"
+      :width="$q.screen.lt.md ? 270 : 295"
       bordered
       class="drawer-electrofrio"
     >
@@ -42,6 +44,7 @@
           exact
           class="menu-item"
           active-class="menu-activo"
+          @click="cerrarDrawerMovil"
         >
           <q-item-section avatar>
             <q-icon :name="item.icon" class="menu-icon" />
@@ -84,6 +87,18 @@ export default {
         { to: '/pagos', icon: 'payments', label: 'Pagos', caption: 'Control de ingresos' },
         { to: '/historial', icon: 'history', label: 'Historial', caption: 'Eliminados' }
       ]
+    }
+  },
+
+  mounted() {
+    this.drawer = !this.$q.screen.lt.md
+  },
+
+  methods: {
+    cerrarDrawerMovil() {
+      if (this.$q.screen.lt.md) {
+        this.drawer = false
+      }
     }
   }
 }
@@ -166,5 +181,48 @@ export default {
 
 .page-electrofrio {
   background: #f4f7fb;
+  min-height: 100vh;
+}
+
+/* Responsive móvil */
+@media (max-width: 768px) {
+  .toolbar-electrofrio {
+    min-height: 60px;
+    padding: 0 10px;
+  }
+
+  .logo-electrofrio {
+    width: 42px;
+    height: 42px;
+  }
+
+  .titulo-electrofrio {
+    font-size: 18px;
+    letter-spacing: 0.2px;
+  }
+
+  .btn-menu {
+    margin-right: 4px;
+  }
+
+  .menu-item {
+    margin: 7px 8px;
+    border-radius: 16px;
+  }
+
+  .menu-titulo {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .titulo-electrofrio {
+    font-size: 16px;
+  }
+
+  .logo-electrofrio {
+    width: 38px;
+    height: 38px;
+  }
 }
 </style>
