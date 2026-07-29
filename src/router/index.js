@@ -1,11 +1,13 @@
-import { defineRouter } from '#q-app/wrappers'
+import { defineRouter } from '#q-app'
 import {
-  createRouter,
   createMemoryHistory,
-  createWebHistory,
+  createRouter,
   createWebHashHistory,
+  createWebHistory
 } from 'vue-router'
-import routes from './routes'
+
+import routes from './routes.js'
+import { haySesion, obtenerUsuario } from '../services/auth.js'
 
 /*
  * If not building with SSR mode, you can
@@ -17,9 +19,9 @@ import routes from './routes'
  */
 
 export default defineRouter((/* { store, ssrContext } */) => {
-  const createHistory = process.env.SERVER
+  const createHistory = import.meta.env.QUASAR_SERVER
     ? createMemoryHistory
-    : process.env.VUE_ROUTER_MODE === 'history'
+    : import.meta.env.QUASAR_VUE_ROUTER_MODE === 'history'
       ? createWebHistory
       : createWebHashHistory
 
@@ -30,7 +32,23 @@ export default defineRouter((/* { store, ssrContext } */) => {
     // Leave this as is and make changes in quasar.conf.js instead!
     // quasar.conf.js -> build -> vueRouterMode
     // quasar.conf.js -> build -> publicPath
-    history: createHistory(process.env.VUE_ROUTER_BASE),
+    history: createHistory(import.meta.env.QUASAR_VUE_ROUTER_BASE)
+  })
+
+  Router.beforeEach(to => {
+    if (to.meta.publica) {
+      return haySesion() && to.name === 'login' ? { name: 'dashboard' } : true
+    }
+
+    if (!haySesion()) {
+      return { name: 'login', query: { redirect: to.fullPath } }
+    }
+
+    if (to.meta.roles && !to.meta.roles.includes(obtenerUsuario()?.rol)) {
+      return { name: 'dashboard' }
+    }
+
+    return true
   })
 
   return Router

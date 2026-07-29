@@ -1,680 +1,521 @@
 <template>
-  <q-page class="q-pa-md pagos-page">
-
-    <div class="row justify-between items-center q-mb-lg page-header">
+  <q-page class="q-pa-md page-shell">
+    <div class="row items-center justify-between q-mb-md q-col-gutter-md">
       <div>
-        <div class="text-h5 text-primary text-weight-bold">
-          Historial de Pagos
-        </div>
-
-        <div class="text-caption text-grey-7">
-          Seguimiento de cobros por servicios realizados
-        </div>
+        <div class="text-h4 text-weight-bold text-primary">Pagos</div>
+        <div class="text-subtitle2 text-grey-7"
+          >Registro de cobros con método, estado y monto sugerido desde la
+          cita</div
+        >
       </div>
-
-      <q-btn
-        class="btn-electrofrio btn-page"
-        icon="add"
-        label="Registrar Pago"
-        @click="abrirDialog"
-      />
+      <div class="q-gutter-sm">
+        <q-btn
+          color="primary"
+          icon="add"
+          label="Nuevo pago"
+          @click="abrirCrear"
+        />
+        <q-btn
+          color="primary"
+          outline
+          icon="refresh"
+          label="Actualizar"
+          @click="cargarPagos"
+        />
+      </div>
     </div>
 
-    <q-card class="filtros-card q-mb-md">
+    <q-card class="content-card q-mb-md">
       <q-card-section>
-        <div class="row q-col-gutter-md items-center filtros-responsive">
-          <div class="col-12 col-md-5">
-            <q-input
-              v-model="filtro"
-              outlined
-              dense
-              rounded
-              clearable
-              debounce="300"
-              placeholder="Buscar cliente, servicio o método..."
-            >
-              <template #prepend>
-                <q-icon name="search" />
-              </template>
-            </q-input>
-          </div>
-
-          <div class="col-12 col-md-3">
-            <q-select
-              v-model="filtroEstado"
-              :options="opcionesEstado"
-              label="Estado"
-              outlined
-              dense
-              rounded
-              emit-value
-              map-options
-            />
-          </div>
-
-          <div class="col-12 col-md-2">
-            <q-select
-              v-model="filtroMetodo"
-              :options="opcionesMetodo"
-              label="Método"
-              outlined
-              dense
-              rounded
-              emit-value
-              map-options
-            />
-          </div>
-
-          <div class="col-12 col-md-2">
-            <q-chip
-              color="primary"
-              text-color="white"
-              icon="payments"
-              class="q-pa-md chip-total"
-            >
-              {{ pagosFiltrados.length }} pago(s)
-            </q-chip>
-          </div>
-        </div>
+        <q-input
+          v-model="buscar"
+          outlined
+          dense
+          clearable
+          debounce="400"
+          label="Buscar pago por cliente, estado o método"
+          @update:model-value="cargarPagos"
+        >
+          <template #prepend><q-icon name="search" /></template>
+        </q-input>
       </q-card-section>
     </q-card>
 
-    <q-table
-      class="tabla-electrofrio"
-      :rows="pagosFiltrados"
-      :columns="columns"
-      row-key="id"
-      :loading="loading"
-      flat
-      bordered
-      no-data-label="No hay pagos registrados"
-      :pagination="pagination"
-      :rows-per-page-options="[5, 10, 15, 20, 0]"
-    >
+    <q-banner v-if="error" class="bg-red-1 text-red q-mb-md rounded-borders">{{
+      error
+    }}</q-banner>
 
-      <template #body-cell-cliente="props">
-        <q-td :props="props">
-          <div class="text-weight-bold text-primary">
-            {{ props.row.servicio?.cliente?.nombre || 'S/N' }}
-          </div>
+    <q-card class="content-card">
+      <q-table
+        title="Listado de pagos"
+        :rows="pagos"
+        :columns="columns"
+        row-key="id"
+        :loading="loading"
+        :rows-per-page-options="[10, 20, 50, 0]"
+        no-data-label="No hay pagos registrados"
+      >
+        <template #body-cell-monto="props">
+          <q-td :props="props"
+            ><span class="money-pill"
+              >Bs {{ Number(props.row.monto || 0).toFixed(2) }}</span
+            ></q-td
+          >
+        </template>
 
-          <div class="text-caption text-grey-7">
-            Servicio #{{ props.row.servicio_id }}
-          </div>
+        <template #body-cell-metodo_pago="props">
+          <q-td :props="props">
+            <q-chip
+              dense
+              outline
+              color="primary"
+              :icon="iconoMetodo(props.row.metodo_pago)"
+            >
+              {{ textoMetodo(props.row.metodo_pago) }}
+            </q-chip>
+          </q-td>
+        </template>
 
-          <div class="q-mt-xs">
-            <q-badge
-              rounded
-              color="blue"
-              :label="props.row.servicio?.tipo_servicio || 'Servicio'"
+        <template #body-cell-estado="props">
+          <q-td :props="props">
+            <q-chip
+              dense
+              :color="colorEstado(props.row.estado)"
+              text-color="white"
+              >{{ textoEstado(props.row.estado) }}</q-chip
+            >
+          </q-td>
+        </template>
+
+        <template #body-cell-acciones="props">
+          <q-td :props="props" class="table-actions">
+            <ActionMenu
+              @view="abrirVer(props.row)"
+              @edit="abrirEditar(props.row)"
+              @delete="eliminarPago(props.row)"
             />
+          </q-td>
+        </template>
+      </q-table>
+    </q-card>
+
+    <q-dialog
+      v-model="dialogo"
+      persistent
+      maximized
+      transition-show="slide-left"
+      transition-hide="slide-right"
+    >
+      <q-card class="workspace-dialog">
+        <q-card-section class="bg-primary text-white">
+          <div class="row items-center justify-between no-wrap">
+            <div>
+              <div class="text-h6">{{ tituloDialogo }}</div>
+              <div class="text-caption text-blue-1"
+                >Selecciona una cita para cargar cliente y monto
+                automáticamente</div
+              >
+            </div>
+            <q-btn flat round dense icon="close" v-close-popup />
           </div>
-        </q-td>
-      </template>
-
-      <template #body-cell-pago="props">
-        <q-td :props="props" class="text-center">
-          <div class="text-h6 text-green-8 text-weight-bold">
-            {{ Number(props.row.monto || 0).toFixed(2) }} Bs.
-          </div>
-
-          <div class="text-caption text-grey-7">
-            {{ props.row.metodo_pago || 'Sin método' }}
-          </div>
-
-          <q-badge
-            rounded
-            :color="colorEstado(props.row.estado)"
-            :label="props.row.estado || 'Pendiente'"
-          />
-        </q-td>
-      </template>
-
-      <template #body-cell-fecha="props">
-        <q-td :props="props" class="text-center">
-          <div class="text-weight-bold">
-            {{ props.row.fecha_pago || 'Sin fecha' }}
-          </div>
-
-          <div class="text-caption text-grey-7">
-            Fecha de pago
-          </div>
-        </q-td>
-      </template>
-
-      <template #body-cell-acciones="props">
-        <q-td :props="props" class="q-gutter-xs text-center">
-          <q-btn
-            size="sm"
-            round
-            unelevated
-            color="primary"
-            icon="edit"
-            @click="editar(props.row)"
-          />
-
-          <q-btn
-            size="sm"
-            round
-            unelevated
-            color="negative"
-            icon="delete"
-            @click="eliminar(props.row.id)"
-          />
-        </q-td>
-      </template>
-    </q-table>
-
-    <q-dialog v-model="dialog" persistent>
-      <q-card class="dialog-card">
-        <q-card-section class="dialog-header row items-center">
-          <div class="text-h6">
-            {{ editando ? 'Editar Pago' : 'Registrar Pago' }}
-          </div>
-
-          <q-space />
-
-          <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
-        <q-scroll-area class="dialog-scroll">
-          <q-card-section class="q-gutter-md q-pt-lg">
+        <q-card-section class="row q-col-gutter-md">
+          <div class="col-12 col-md-7">
             <q-select
-              v-model="form.servicio_id"
-              :options="servicios"
-              label="Servicio / Orden"
-              :option-label="textoServicio"
-              option-value="id"
+              v-model="form.cita_id"
+              :options="citasOptions"
               emit-value
               map-options
+              use-input
+              input-debounce="0"
+              label="Cita / atención"
               outlined
-              dense
-              rounded
-              @update:model-value="setMontoServicio"
+              clearable
+              :readonly="modo === 'ver'"
+              @filter="filtrarCitas"
+              @update:model-value="seleccionarCita"
             />
-
+          </div>
+          <div class="col-12 col-md-5">
+            <q-input
+              :model-value="clientePagoNombre"
+              label="Cliente"
+              outlined
+              readonly
+              hint="Se carga desde la atención seleccionada"
+            >
+              <template #prepend><q-icon name="person" /></template>
+            </q-input>
+          </div>
+          <div v-if="citaSeleccionada" class="col-12">
+            <q-card flat bordered class="q-pa-sm selected-payment-card">
+              <div class="row q-col-gutter-sm items-center">
+                <div class="col-12 col-md-4"
+                  ><strong>{{
+                    citaSeleccionada.servicio?.nombre || 'Servicio técnico'
+                  }}</strong
+                  ><div class="text-caption"
+                    >{{ formatearFecha(citaSeleccionada.fecha) }} ·
+                    {{ String(citaSeleccionada.hora || '').slice(0, 5) }}</div
+                  ></div
+                >
+                <div class="col-12 col-md-4"
+                  ><strong>Cliente:</strong>
+                  {{ citaSeleccionada.cliente?.nombre || 'Sin cliente'
+                  }}<div class="text-caption">{{
+                    citaSeleccionada.cliente?.telefono || 'Sin teléfono'
+                  }}</div></div
+                >
+                <div class="col-12 col-md-4 text-md-right"
+                  ><span class="money-pill"
+                    >Sugerido: Bs
+                    {{ Number(citaSeleccionada.total || 0).toFixed(2) }}</span
+                  ></div
+                >
+              </div>
+            </q-card>
+          </div>
+          <div class="col-12 col-md-3">
             <q-input
               v-model.number="form.monto"
               type="number"
-              label="Monto a Cobrar"
+              label="Monto"
+              prefix="Bs"
               outlined
-              dense
-              rounded
-              suffix="Bs."
+              :readonly="modo === 'ver'"
+              hint="Editable si es pago parcial"
             />
-
+          </div>
+          <div class="col-12 col-md-3">
+            <q-select
+              v-model="form.metodo_pago"
+              :options="metodosOptions"
+              emit-value
+              map-options
+              label="Método de pago"
+              outlined
+              :readonly="modo === 'ver'"
+            >
+              <template #selected-item="scope">
+                <q-chip
+                  dense
+                  color="primary"
+                  text-color="white"
+                  :icon="scope.opt.icon"
+                  >{{ scope.opt.label }}</q-chip
+                >
+              </template>
+            </q-select>
+          </div>
+          <div class="col-12 col-md-3">
+            <q-select
+              v-model="form.estado"
+              :options="estadosOptions"
+              emit-value
+              map-options
+              label="Estado"
+              outlined
+              :readonly="modo === 'ver'"
+            />
+          </div>
+          <div class="col-12 col-md-3">
             <q-input
               v-model="form.fecha_pago"
               type="date"
-              label="Fecha de Pago"
+              label="Fecha"
               outlined
-              dense
-              rounded
+              :readonly="modo === 'ver'"
             />
-
-            <q-select
-              v-model="form.metodo_pago"
-              :options="['Efectivo', 'Transferencia', 'QR', 'Tigo Money']"
-              label="Método de Pago"
-              outlined
-              dense
-              rounded
-            />
-
-            <q-select
-              v-model="form.estado"
-              :options="['Completado', 'Pendiente', 'Anulado']"
-              label="Estado del Pago"
-              outlined
-              dense
-              rounded
-            />
-
+          </div>
+          <div class="col-12">
             <q-input
-              v-model.trim="form.observaciones"
-              type="textarea"
-              label="Observaciones"
+              v-model="form.observacion"
+              label="Observación del pago"
               outlined
-              dense
-              rounded
+              type="textarea"
+              rows="3"
+              :readonly="modo === 'ver'"
             />
-          </q-card-section>
-        </q-scroll-area>
+          </div>
+        </q-card-section>
 
-        <q-card-actions align="right" class="dialog-actions">
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn flat label="Cerrar" color="grey-8" v-close-popup />
           <q-btn
-            flat
-            label="Cancelar"
-            color="grey-7"
-            v-close-popup
-          />
-
-          <q-btn
-            class="btn-electrofrio"
-            :label="editando ? 'Actualizar' : 'Confirmar Pago'"
-            @click="guardar"
-            :loading="submitting"
+            v-if="modo !== 'ver'"
+            color="primary"
+            icon="save"
+            :label="modo === 'crear' ? 'Guardar pago' : 'Actualizar pago'"
+            @click="guardarPago"
           />
         </q-card-actions>
       </q-card>
     </q-dialog>
-
   </q-page>
 </template>
 
-<script>
-import { api } from 'boot/axios'
+<script setup>
+import { computed, onMounted, ref } from 'vue'
+import { date, useQuasar } from 'quasar'
+import ActionMenu from '../components/ActionMenu.vue'
+import api, { extraerMensajeError } from '../services/api.js'
 
-export default {
-  name: 'PagosPage',
+const $q = useQuasar()
+const loading = ref(false)
+const error = ref('')
+const buscar = ref('')
+const pagos = ref([])
+const clientes = ref([])
+const citas = ref([])
+const citasFiltradas = ref([])
+const dialogo = ref(false)
+const modo = ref('crear')
+const pagoId = ref(null)
 
-  data() {
-    return {
-      loading: false,
-      submitting: false,
-      dialog: false,
-      editando: false,
+const metodosOptions = [
+  { label: 'Efectivo', value: 'efectivo', icon: 'payments' },
+  { label: 'QR', value: 'qr', icon: 'qr_code_2' },
+  { label: 'Transferencia', value: 'transferencia', icon: 'account_balance' },
+  { label: 'Mixto', value: 'mixto', icon: 'splitscreen' }
+]
 
-      pagos: [],
-      servicios: [],
+const estadosOptions = [
+  { label: 'Pendiente', value: 'pendiente' },
+  { label: 'Pagado', value: 'pagado' },
+  { label: 'Anulado', value: 'anulado' }
+]
 
-      filtro: '',
-      filtroEstado: 'todos',
-      filtroMetodo: 'todos',
+const formInicial = {
+  cita_id: null,
+  cliente_id: null,
+  monto: 0,
+  metodo_pago: 'efectivo',
+  estado: 'pagado',
+  fecha_pago: date.formatDate(new Date(), 'YYYY-MM-DD'),
+  observacion: ''
+}
 
-      pagination: {
-        rowsPerPage: 5
-      },
+const form = ref({ ...formInicial })
 
-      form: this.formVacio(),
+const clientesOptions = computed(() =>
+  clientes.value.map(cliente => ({ label: cliente.nombre, value: cliente.id }))
+)
 
-      columns: [
-        { name: 'cliente', label: 'Cliente / Orden', align: 'left' },
-        { name: 'pago', label: 'Pago', align: 'center' },
-        { name: 'fecha', label: 'Fecha', align: 'center' },
-        { name: 'acciones', label: 'Acciones', align: 'center' }
-      ]
-    }
+const citasOptions = computed(() =>
+  citasFiltradas.value.map(cita => ({
+    label: etiquetaCita(cita),
+    value: cita.id
+  }))
+)
+
+const citaSeleccionada = computed(() =>
+  citas.value.find(cita => Number(cita.id) === Number(form.value.cita_id))
+)
+const clientePagoNombre = computed(() => {
+  const cliente =
+    citaSeleccionada.value?.cliente ||
+    clientes.value.find(
+      item => Number(item.id) === Number(form.value.cliente_id)
+    )
+  return cliente?.nombre || 'Selecciona una atención'
+})
+
+const columns = [
+  { name: 'acciones', label: '', field: 'acciones', align: 'center' },
+  {
+    name: 'fecha_pago',
+    label: 'Fecha',
+    field: row => formatearFecha(row.fecha_pago),
+    align: 'left',
+    sortable: true
   },
-
-  computed: {
-    opcionesEstado() {
-      return [
-        { label: 'Todos', value: 'todos' },
-        { label: 'Completado', value: 'Completado' },
-        { label: 'Pendiente', value: 'Pendiente' },
-        { label: 'Anulado', value: 'Anulado' }
-      ]
-    },
-
-    opcionesMetodo() {
-      return [
-        { label: 'Todos', value: 'todos' },
-        { label: 'Efectivo', value: 'Efectivo' },
-        { label: 'Transferencia', value: 'Transferencia' },
-        { label: 'QR', value: 'QR' },
-        { label: 'Tigo Money', value: 'Tigo Money' }
-      ]
-    },
-
-    pagosFiltrados() {
-      let lista = [...this.pagos]
-
-      if (this.filtro) {
-        const texto = this.filtro.toLowerCase()
-
-        lista = lista.filter(pago => {
-          return (
-            String(pago.servicio?.cliente?.nombre || '').toLowerCase().includes(texto) ||
-            String(pago.metodo_pago || '').toLowerCase().includes(texto) ||
-            String(pago.estado || '').toLowerCase().includes(texto) ||
-            String(pago.servicio?.tipo_servicio || '').toLowerCase().includes(texto)
-          )
-        })
-      }
-
-      if (this.filtroEstado !== 'todos') {
-        lista = lista.filter(
-          pago => pago.estado === this.filtroEstado
-        )
-      }
-
-      if (this.filtroMetodo !== 'todos') {
-        lista = lista.filter(
-          pago => pago.metodo_pago === this.filtroMetodo
-        )
-      }
-
-      return lista
-    }
+  {
+    name: 'cliente',
+    label: 'Cliente',
+    field: row => row.cliente?.nombre || 'Sin cliente',
+    align: 'left',
+    sortable: true
   },
-
-  mounted() {
-    this.initData()
+  {
+    name: 'cita',
+    label: 'Cita / servicio',
+    field: row => row.cita?.servicio?.nombre || 'Pago directo',
+    align: 'left'
   },
+  {
+    name: 'monto',
+    label: 'Monto',
+    field: 'monto',
+    align: 'right',
+    sortable: true
+  },
+  {
+    name: 'metodo_pago',
+    label: 'Método',
+    field: 'metodo_pago',
+    align: 'center'
+  },
+  { name: 'estado', label: 'Estado', field: 'estado', align: 'center' }
+]
 
-  methods: {
-    colorEstado(estado) {
-      if (estado === 'Completado') return 'green'
-      if (estado === 'Pendiente') return 'orange'
-      return 'red'
-    },
+const tituloDialogo = computed(() =>
+  modo.value === 'crear'
+    ? 'Registrar pago'
+    : modo.value === 'editar'
+      ? 'Editar pago'
+      : 'Ver pago'
+)
+const textoMetodo = metodo =>
+  metodosOptions.find(item => item.value === metodo)?.label || metodo
+const iconoMetodo = metodo =>
+  metodosOptions.find(item => item.value === metodo)?.icon || 'payments'
+const textoEstado = estado =>
+  estadosOptions.find(item => item.value === estado)?.label || estado
+const colorEstado = estado =>
+  ({ pendiente: 'warning', pagado: 'positive', anulado: 'negative' })[estado] ||
+  'grey'
+const formatearFecha = value =>
+  value ? date.formatDate(value, 'DD/MM/YYYY') : '—'
 
-    formVacio() {
-      return {
-        id: null,
-        servicio_id: null,
-        monto: 0,
-        fecha_pago: new Date().toISOString().slice(0, 10),
-        metodo_pago: 'Efectivo',
-        estado: 'Completado',
-        observaciones: ''
-      }
-    },
+const etiquetaCita = cita => {
+  const cliente = cita.cliente?.nombre || 'Sin cliente'
+  const servicio = cita.servicio?.nombre || 'Sin servicio'
+  const total = Number(cita.total || 0).toFixed(2)
+  return `${formatearFecha(cita.fecha)} ${String(cita.hora || '').slice(0, 5)} · ${cliente} · ${servicio} · Bs ${total}`
+}
 
-    obtenerLista(res) {
-      return Array.isArray(res.data)
-        ? res.data
-        : (res.data?.data || [])
-    },
+const limpiarFormulario = () => {
+  form.value = { ...formInicial }
+  pagoId.value = null
+}
 
-    mensajeError(error, defecto) {
-      const errores = error.response?.data?.errors
+const cargarCombos = async () => {
+  const [clientesResponse, citasResponse] = await Promise.all([
+    api.get('/clientes'),
+    api.get('/citas')
+  ])
+  clientes.value = clientesResponse.data.data || []
+  citas.value = citasResponse.data.data || []
+  citasFiltradas.value = citas.value
+}
 
-      if (errores) {
-        return Object.values(errores).flat()[0]
-      }
-
-      return (
-        error.response?.data?.message ||
-        error.response?.data?.mensaje ||
-        defecto
-      )
-    },
-
-    textoServicio(servicio) {
-      if (!servicio) return 'S/N'
-
-      return `Orden #${servicio.id} - ${servicio.cliente?.nombre || 'Sin cliente'} - ${servicio.tipo_servicio || 'Servicio'}`
-    },
-
-    async initData() {
-      this.loading = true
-
-      try {
-        const [resPagos, resServicios] = await Promise.all([
-          api.get('/pagos'),
-          api.get('/servicios')
-        ])
-
-        this.pagos = this.obtenerLista(resPagos)
-        this.servicios = this.obtenerLista(resServicios)
-      } catch (error) {
-        this.$q.notify({
-          type: 'negative',
-          message: this.mensajeError(error, 'Error al cargar pagos')
-        })
-      } finally {
-        this.loading = false
-      }
-    },
-
-    abrirDialog() {
-      this.form = this.formVacio()
-      this.editando = false
-      this.dialog = true
-    },
-
-    setMontoServicio(id) {
-      const servicio = this.servicios.find(
-        s => Number(s.id) === Number(id)
-      )
-
-      if (servicio) {
-        this.form.monto = Number(servicio.costo || 0)
-      }
-    },
-
-    validar() {
-      if (!this.form.servicio_id) {
-        this.$q.notify({
-          type: 'warning',
-          message: 'Selecciona un servicio'
-        })
-        return false
-      }
-
-      if (Number(this.form.monto) < 0) {
-        this.$q.notify({
-          type: 'warning',
-          message: 'El monto no puede ser negativo'
-        })
-        return false
-      }
-
-      if (!this.form.fecha_pago) {
-        this.$q.notify({
-          type: 'warning',
-          message: 'La fecha de pago es obligatoria'
-        })
-        return false
-      }
-
-      return true
-    },
-
-    async guardar() {
-      if (!this.validar()) return
-
-      this.submitting = true
-
-      try {
-        const payload = {
-          servicio_id: this.form.servicio_id,
-          monto: Number(this.form.monto || 0),
-          fecha_pago: this.form.fecha_pago,
-          metodo_pago: this.form.metodo_pago || null,
-          estado: this.form.estado || null,
-          observaciones: this.form.observaciones || null
-        }
-
-        if (this.editando) {
-          await api.put(`/pagos/${this.form.id}`, payload)
-        } else {
-          await api.post('/pagos', payload)
-        }
-
-        this.$q.notify({
-          type: 'positive',
-          message: this.editando
-            ? 'Pago actualizado'
-            : 'Pago registrado'
-        })
-
-        this.dialog = false
-
-        await this.initData()
-      } catch (error) {
-        this.$q.notify({
-          type: 'negative',
-          message: this.mensajeError(error, 'Error al guardar pago')
-        })
-      } finally {
-        this.submitting = false
-      }
-    },
-
-    editar(row) {
-      this.form = {
-        id: row.id,
-        servicio_id: row.servicio_id,
-        monto: Number(row.monto || 0),
-        fecha_pago: row.fecha_pago || new Date().toISOString().slice(0, 10),
-        metodo_pago: row.metodo_pago || 'Efectivo',
-        estado: row.estado || 'Completado',
-        observaciones: row.observaciones || ''
-      }
-
-      this.editando = true
-      this.dialog = true
-    },
-
-    eliminar(id) {
-      const pago = this.pagos.find(
-        p => Number(p.id) === Number(id)
-      )
-
-      this.$q.dialog({
-        title: 'Eliminar Pago',
-        message: '¿Eliminar este registro de pago?',
-        cancel: true,
-        persistent: true
-      }).onOk(async () => {
-        try {
-          if (pago) {
-            const historial = JSON.parse(
-              localStorage.getItem('pagos_eliminados') || '[]'
-            )
-
-            historial.unshift({
-              ...pago,
-              fecha_eliminacion: new Date().toLocaleString()
-            })
-
-            localStorage.setItem(
-              'pagos_eliminados',
-              JSON.stringify(historial)
-            )
-          }
-
-          await api.delete(`/pagos/${id}`)
-
-          this.$q.notify({
-            type: 'positive',
-            message: 'Pago eliminado'
-          })
-
-          await this.initData()
-        } catch (error) {
-          this.$q.notify({
-            type: 'negative',
-            message: this.mensajeError(
-              error,
-              'No se pudo eliminar el pago'
-            )
-          })
-        }
-      })
-    }
+const cargarPagos = async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    const response = await api.get('/pagos', {
+      params: { buscar: buscar.value || undefined }
+    })
+    pagos.value = response.data.data || []
+  } catch (err) {
+    error.value = extraerMensajeError(
+      err,
+      'No se pudo cargar la lista de pagos.'
+    )
+  } finally {
+    loading.value = false
   }
 }
+
+const filtrarCitas = (val, update) => {
+  update(() => {
+    const texto = String(val || '').toLowerCase()
+    citasFiltradas.value = citas.value.filter(cita =>
+      etiquetaCita(cita).toLowerCase().includes(texto)
+    )
+  })
+}
+
+const seleccionarCita = value => {
+  const cita = citas.value.find(item => Number(item.id) === Number(value))
+  if (!cita) return
+  form.value.cliente_id = cita.cliente_id || cita.cliente?.id || null
+  form.value.monto = Number(cita.total || 0)
+}
+
+const abrirCrear = async () => {
+  modo.value = 'crear'
+  limpiarFormulario()
+  await cargarCombos()
+  dialogo.value = true
+}
+
+const abrirVer = async item => {
+  modo.value = 'ver'
+  pagoId.value = item.id
+  await cargarCombos()
+  form.value = {
+    ...item,
+    cita_id: item.cita_id || item.cita?.id || null,
+    cliente_id: item.cliente_id || item.cliente?.id || null
+  }
+  dialogo.value = true
+}
+
+const abrirEditar = async item => {
+  modo.value = 'editar'
+  pagoId.value = item.id
+  await cargarCombos()
+  form.value = {
+    ...item,
+    cita_id: item.cita_id || item.cita?.id || null,
+    cliente_id: item.cliente_id || item.cliente?.id || null
+  }
+  dialogo.value = true
+}
+
+const guardarPago = async () => {
+  if (!form.value.monto || Number(form.value.monto) < 0) {
+    $q.notify({ type: 'warning', message: 'El monto del pago es obligatorio' })
+    return
+  }
+
+  try {
+    if (modo.value === 'crear') await api.post('/pagos', form.value)
+    else await api.put(`/pagos/${pagoId.value}`, form.value)
+
+    $q.notify({ type: 'positive', message: 'Pago guardado correctamente' })
+    dialogo.value = false
+    limpiarFormulario()
+    cargarPagos()
+  } catch (err) {
+    $q.notify({
+      type: 'negative',
+      message: extraerMensajeError(err, 'No se pudo guardar el pago')
+    })
+  }
+}
+
+const eliminarPago = item => {
+  $q.dialog({
+    title: 'Confirmar eliminación',
+    message: '¿Eliminar este pago?',
+    cancel: true,
+    persistent: true
+  }).onOk(async () => {
+    try {
+      await api.delete(`/pagos/${item.id}`)
+      $q.notify({ type: 'positive', message: 'Pago eliminado correctamente' })
+      cargarPagos()
+    } catch (err) {
+      $q.notify({
+        type: 'negative',
+        message: extraerMensajeError(err, 'No se pudo eliminar el pago')
+      })
+    }
+  })
+}
+
+onMounted(() => {
+  cargarPagos()
+  cargarCombos()
+})
 </script>
 
 <style scoped>
-.pagos-page {
-  min-height: 100vh;
-}
-
-.filtros-card {
-  border-radius: 22px;
-  box-shadow: 0 12px 30px rgba(13, 71, 161, 0.10);
-}
-
-.chip-total {
-  width: 100%;
-  justify-content: center;
-  font-weight: 800;
-}
-
-.tabla-electrofrio {
-  border-radius: 24px;
-  overflow: hidden;
-  box-shadow: 0 14px 35px rgba(13, 71, 161, 0.12);
-  background: white;
-}
-
-.tabla-electrofrio :deep(.q-table thead tr) {
-  background: linear-gradient(135deg, #0d47a1, #c62828);
-  color: white;
-}
-
-.tabla-electrofrio :deep(.q-table th) {
-  font-weight: 700;
-  font-size: 14px;
-}
-
-.tabla-electrofrio :deep(.q-table tbody tr:hover) {
-  background: #eef4ff;
-}
-
-.dialog-card {
-  width: 460px;
-  max-width: 95vw;
-  max-height: 90vh;
-  border-radius: 22px;
-  overflow: hidden;
-}
-
-.dialog-scroll {
-  max-height: 65vh;
-}
-
-.dialog-actions {
-  padding: 12px 18px 18px 18px;
-  background: white;
-  border-top: 1px solid #eeeeee;
-}
-
-.dialog-header {
-  background: linear-gradient(135deg, #0d47a1, #c62828);
-  color: white;
-}
-
-@media (max-width: 600px) {
-  .pagos-page {
-    padding: 10px;
-  }
-
-  .page-header {
-    gap: 12px;
-  }
-
-  .btn-page {
-    width: 100%;
-  }
-
-  .filtros-responsive {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .filtros-responsive > div {
-    width: 100% !important;
-    max-width: 100% !important;
-    flex: 0 0 100% !important;
-  }
-
-  .dialog-card {
-    width: 95vw;
-    max-width: 95vw;
-    border-radius: 18px;
-  }
-
-  .dialog-scroll {
-    max-height: 70vh;
-  }
-
-  .dialog-actions {
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  .dialog-actions .q-btn {
-    flex: 1;
-  }
-
-  .tabla-electrofrio {
-    border-radius: 16px;
-  }
+.selected-payment-card {
+  background: linear-gradient(135deg, #ffffff 0%, #eef8ff 100%);
+  border-color: rgba(25, 118, 210, 0.18);
 }
 </style>

@@ -1,228 +1,300 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header elevated class="header-electrofrio">
-      <q-toolbar class="toolbar-electrofrio">
+    <q-header elevated class="main-header">
+      <q-toolbar class="q-px-md main-toolbar">
         <q-btn
           flat
           dense
           round
           icon="menu"
-          aria-label="Menu"
-          class="btn-menu"
-          @click="drawer = !drawer"
+          class="text-white"
+          @click="toggleLeftDrawer"
         />
 
-        <q-avatar class="logo-electrofrio q-mr-sm">
-          <img src="../assets/logo-electrofrio.png">
-        </q-avatar>
-
-        <q-toolbar-title class="titulo-electrofrio">
-          Electro Frío
+        <q-toolbar-title class="row items-center no-wrap">
+          <q-avatar size="42px" class="brand-avatar q-mr-sm">
+            <img
+              :src="logoElectroFrio"
+              alt="Electro Frío"
+              class="brand-logo-img"
+            />
+          </q-avatar>
+          <div>
+            <div class="text-weight-bold text-h6">Electro Frío</div>
+            <div class="text-caption text-blue-1 gt-xs"
+              >Sistema de gestión técnica</div
+            >
+          </div>
         </q-toolbar-title>
+
+        <q-btn
+          flat
+          round
+          icon="notifications_none"
+          class="text-white q-mr-sm"
+          to="/mensajes"
+        >
+          <q-badge
+            v-if="mensajesNoLeidos"
+            floating
+            rounded
+            color="negative"
+            :label="mensajesNoLeidos > 99 ? '99+' : mensajesNoLeidos"
+          />
+          <q-tooltip>Mensajes pendientes</q-tooltip>
+        </q-btn>
+
+        <q-btn-dropdown
+          flat
+          no-caps
+          class="user-menu"
+          icon="account_circle"
+          :label="nombreUsuario"
+        >
+          <q-list style="min-width: 330px">
+            <q-item>
+              <q-item-section avatar
+                ><q-icon name="badge" color="primary"
+              /></q-item-section>
+              <q-item-section>
+                <q-item-label>{{ nombreUsuario }}</q-item-label>
+                <q-item-label caption>{{ etiquetaRol }}</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-separator />
+            <q-item class="q-py-md">
+              <q-item-section>
+                <q-item-label class="text-weight-bold">
+                  <q-icon name="contrast" color="primary" class="q-mr-xs" />
+                  Apariencia
+                </q-item-label>
+                <q-item-label caption class="q-mb-sm">
+                  Cambia la lectura, no la identidad de los módulos.
+                </q-item-label>
+                <q-btn-toggle
+                  v-model="tema"
+                  spread
+                  no-caps
+                  unelevated
+                  toggle-color="primary"
+                  color="grey-2"
+                  text-color="grey-8"
+                  :options="temaOptions"
+                  @update:model-value="cambiarTema"
+                />
+              </q-item-section>
+            </q-item>
+            <q-separator />
+            <q-item clickable v-close-popup @click="cerrarSesion">
+              <q-item-section avatar
+                ><q-icon name="logout" color="negative"
+              /></q-item-section>
+              <q-item-section>Cerrar sesión</q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
       </q-toolbar>
     </q-header>
 
     <q-drawer
-      v-model="drawer"
-      :show-if-above="!$q.screen.lt.md"
-      :overlay="$q.screen.lt.md"
-      :width="$q.screen.lt.md ? 270 : 295"
-      bordered
-      class="drawer-electrofrio"
+      v-model="leftDrawerOpen"
+      show-if-above
+      class="main-drawer"
+      :width="310"
+      :mini-width="78"
+      :mini="drawerMini && !drawerHovered"
+      :breakpoint="1100"
+      elevated
+      @mouseenter="drawerHovered = true"
+      @mouseleave="drawerHovered = false"
     >
-      <q-list padding>
-        <q-item-label header class="menu-titulo">
-          Sistema de servicios
-        </q-item-label>
+      <div class="drawer-header q-pa-md">
+        <div class="row items-center no-wrap">
+          <q-avatar size="58px" class="brand-avatar q-mr-md">
+            <img
+              :src="logoElectroFrio"
+              alt="Electro Frío"
+              class="brand-logo-img"
+            />
+          </q-avatar>
+          <div class="drawer-brand-copy">
+            <div class="text-h6 text-weight-bold">Electro Frío</div>
+            <div class="text-caption">Control técnico integral</div>
+          </div>
+        </div>
+      </div>
 
-        <q-item
-          v-for="item in menu"
-          :key="item.to"
-          clickable
-          v-ripple
-          :to="item.to"
-          exact
-          class="menu-item"
-          active-class="menu-activo"
-          @click="cerrarDrawerMovil"
-        >
-          <q-item-section avatar>
-            <q-icon :name="item.icon" class="menu-icon" />
-          </q-item-section>
+      <q-scroll-area class="drawer-scroll">
+        <q-list padding class="drawer-menu">
+          <template v-for="group in menuGroups" :key="group.title">
+            <q-item-label header class="menu-section-title">{{
+              group.title
+            }}</q-item-label>
+            <q-item
+              v-for="item in group.items"
+              :key="item.to"
+              clickable
+              v-ripple
+              :to="item.to"
+              :exact="item.exact"
+              active-class="menu-active"
+              class="drawer-menu-item"
+            >
+              <q-item-section avatar>
+                <div class="menu-icon-wrap">
+                  <q-icon :name="item.icon" />
+                  <span class="menu-step">{{ item.step }}</span>
+                </div>
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>{{ item.label }}</q-item-label>
+                <q-item-label v-if="item.caption" caption>{{
+                  item.caption
+                }}</q-item-label>
+              </q-item-section>
+              <q-item-section v-if="item.badge" side>
+                <q-badge rounded color="negative" :label="item.badge" />
+              </q-item-section>
+            </q-item>
+          </template>
+        </q-list>
+      </q-scroll-area>
 
-          <q-item-section>
-            <q-item-label class="menu-label">
-              {{ item.label }}
-            </q-item-label>
-
-            <q-item-label v-if="item.caption" caption>
-              {{ item.caption }}
-            </q-item-label>
-          </q-item-section>
-        </q-item>
-      </q-list>
+      <div class="drawer-relationship">
+        <q-icon name="hub" size="20px" />
+        <div>
+          <strong>Flujo conectado</strong>
+          <span>Cliente y equipo → Atención → Seguimiento → Entrega</span>
+        </div>
+      </div>
     </q-drawer>
 
-    <q-page-container class="page-electrofrio">
+    <q-page-container>
       <router-view />
     </q-page-container>
   </q-layout>
 </template>
 
-<script>
-export default {
-  name: 'MainLayout',
+<script setup>
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useQuasar } from 'quasar'
+import { useRouter } from 'vue-router'
+import api from '../services/api.js'
+import { limpiarSesion, obtenerUsuario } from '../services/auth.js'
+import { aplicarTema, obtenerTema } from '../services/theme.js'
+import logoElectroFrio from '../assets/electrofrio-mark.png'
 
-  data() {
-    return {
-      drawer: true,
+const router = useRouter()
+const $q = useQuasar()
+const leftDrawerOpen = ref(false)
+const drawerMini = ref(false)
+const drawerHovered = ref(false)
+const usuario = ref(obtenerUsuario())
+const mensajesNoLeidos = ref(0)
+const tema = ref(obtenerTema())
+let temporizadorMensajes = null
 
-      menu: [
-        { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
-        { to: '/clientes', icon: 'people', label: 'Clientes' },
-        { to: '/tecnicos', icon: 'engineering', label: 'Técnicos' },
-        { to: '/equipos', icon: 'ac_unit', label: 'Equipos' },
-        { to: '/servicios', icon: 'build', label: 'Servicios' },
-        { to: '/detalles-tecnicos', icon: 'assignment', label: 'Detalles Técnicos' },
-        { to: '/pagos', icon: 'payments', label: 'Pagos', caption: 'Control de ingresos' },
-        { to: '/historial', icon: 'history', label: 'Historial', caption: 'Eliminados' }
-      ]
-    }
-  },
+const temaOptions = [
+  { label: 'Claro', value: 'claro', icon: 'light_mode' },
+  { label: 'Oscuro', value: 'oscuro', icon: 'dark_mode' },
+  { label: 'Daltónico', value: 'daltonico', icon: 'accessibility_new' }
+]
 
-  mounted() {
-    this.drawer = !this.$q.screen.lt.md
-  },
+const nombreUsuario = computed(() => usuario.value?.name || 'Usuario')
+const etiquetaRol = computed(() => {
+  const roles = {
+    administrador: 'Administrador',
+    recepcion: 'Recepción',
+    tecnico: 'Técnico'
+  }
 
-  methods: {
-    cerrarDrawerMovil() {
-      if (this.$q.screen.lt.md) {
-        this.drawer = false
+  return roles[usuario.value?.rol] || 'Usuario autorizado'
+})
+
+const menuGroups = computed(() => [
+  {
+    title: 'Gestión diaria',
+    items: [
+      {
+        label: 'Panel de control',
+        caption: 'Indicadores y accesos rápidos',
+        icon: 'space_dashboard',
+        to: '/',
+        exact: true,
+        step: '01'
+      },
+      {
+        label: 'Clientes',
+        caption: 'Clientes, equipos e historial',
+        icon: 'groups',
+        to: '/clientes',
+        step: '02'
+      },
+      {
+        label: 'Atenciones',
+        caption: 'Agenda, trabajo y cobro',
+        icon: 'event_available',
+        to: '/citas',
+        step: '03'
+      },
+      {
+        label: 'Mensajes',
+        caption: 'Comunicación y seguimiento',
+        icon: 'forum',
+        to: '/mensajes',
+        step: '04',
+        badge: mensajesNoLeidos.value || null
+      },
+      {
+        label: 'Configuración',
+        caption: 'Servicios, personal e integraciones',
+        icon: 'tune',
+        to: '/configuracion',
+        step: '05'
       }
-    }
+    ]
+  }
+])
+
+onMounted(() => {
+  cargarMensajesNoLeidos()
+  temporizadorMensajes = window.setInterval(cargarMensajesNoLeidos, 10000)
+})
+
+onUnmounted(() => {
+  if (temporizadorMensajes) window.clearInterval(temporizadorMensajes)
+})
+
+const cargarMensajesNoLeidos = async () => {
+  try {
+    const { data } = await api.get('/mensajes/no-leidos')
+    mensajesNoLeidos.value = Number(data.total || 0)
+  } catch {
+    // Mantiene el último contador visible durante cortes de red.
+  }
+}
+
+const toggleLeftDrawer = () => {
+  if ($q.screen.gt.md) {
+    drawerMini.value = !drawerMini.value
+    return
+  }
+
+  leftDrawerOpen.value = !leftDrawerOpen.value
+}
+
+const cambiarTema = nuevoTema => {
+  tema.value = aplicarTema(nuevoTema)
+}
+
+const cerrarSesion = async () => {
+  try {
+    await api.post('/auth/logout')
+  } catch {
+    // La sesión local se limpia aunque Laravel no esté disponible.
+  } finally {
+    limpiarSesion()
+    await router.replace({ name: 'login' })
   }
 }
 </script>
-
-<style scoped>
-.header-electrofrio {
-  background: linear-gradient(135deg, #0d47a1, #c62828) !important;
-}
-
-.toolbar-electrofrio {
-  min-height: 72px;
-}
-
-.logo-electrofrio {
-  width: 52px;
-  height: 52px;
-  background: white;
-  padding: 4px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-}
-
-.logo-electrofrio img {
-  object-fit: contain;
-}
-
-.titulo-electrofrio {
-  font-weight: 900;
-  font-size: 22px;
-  letter-spacing: 0.6px;
-}
-
-.btn-menu {
-  margin-right: 10px;
-}
-
-.drawer-electrofrio {
-  background: linear-gradient(180deg, #ffffff, #eef4ff);
-}
-
-.menu-titulo {
-  color: #0d47a1;
-  font-weight: 900;
-  font-size: 13px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
-.menu-item {
-  margin: 8px 10px;
-  border-radius: 18px;
-  transition: all 0.25s ease;
-}
-
-.menu-item:hover {
-  background: #e3f2fd;
-  transform: translateX(6px);
-}
-
-.menu-icon {
-  color: #0d47a1;
-}
-
-.menu-label {
-  font-weight: 600;
-}
-
-.menu-activo {
-  background: linear-gradient(135deg, #0d47a1, #c62828) !important;
-  color: white !important;
-  border-radius: 18px;
-  box-shadow: 0 8px 18px rgba(13, 71, 161, 0.28);
-}
-
-.menu-activo .q-icon,
-.menu-activo .menu-icon,
-.menu-activo .menu-label {
-  color: white !important;
-}
-
-.page-electrofrio {
-  background: #f4f7fb;
-  min-height: 100vh;
-}
-
-/* Responsive móvil */
-@media (max-width: 768px) {
-  .toolbar-electrofrio {
-    min-height: 60px;
-    padding: 0 10px;
-  }
-
-  .logo-electrofrio {
-    width: 42px;
-    height: 42px;
-  }
-
-  .titulo-electrofrio {
-    font-size: 18px;
-    letter-spacing: 0.2px;
-  }
-
-  .btn-menu {
-    margin-right: 4px;
-  }
-
-  .menu-item {
-    margin: 7px 8px;
-    border-radius: 16px;
-  }
-
-  .menu-titulo {
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 420px) {
-  .titulo-electrofrio {
-    font-size: 16px;
-  }
-
-  .logo-electrofrio {
-    width: 38px;
-    height: 38px;
-  }
-}
-</style>

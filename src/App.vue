@@ -3,7 +3,7 @@
 </template>
 
 <script setup>
-defineOptions({
-  name: 'App'
-})
+import { aplicarTema, obtenerTema } from './services/theme.js'
+
+aplicarTema(obtenerTema())
 </script>

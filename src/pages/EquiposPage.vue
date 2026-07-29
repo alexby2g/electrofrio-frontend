@@ -1,168 +1,272 @@
 <template>
-  <q-page class="q-pa-md equipos-page">
-    <div class="row justify-between items-center q-mb-md page-header">
+  <q-page class="q-pa-md page-shell">
+    <div class="row items-center justify-between q-mb-md q-col-gutter-md">
       <div>
-        <div class="text-h5 text-primary text-weight-bold">
-          Gestión de Equipos
-        </div>
-
-        <div class="text-caption text-grey-7">
-          Aires acondicionados registrados por cliente
-        </div>
+        <div class="text-h4 text-weight-bold text-primary">Equipos</div>
+        <div class="text-subtitle2 text-grey-7"
+          >Equipos reales por cliente con historial técnico independiente</div
+        >
       </div>
-
-      <q-btn
-        class="btn-electrofrio btn-page"
-        icon="add"
-        label="Nuevo Equipo"
-        @click="abrirDialog"
-      />
+      <div class="q-gutter-sm">
+        <q-btn
+          color="primary"
+          icon="add"
+          label="Nuevo equipo"
+          @click="abrirCrear"
+        />
+        <q-btn
+          color="primary"
+          outline
+          icon="refresh"
+          label="Actualizar"
+          @click="cargarEquipos"
+        />
+      </div>
     </div>
 
-    <q-table
-      class="tabla-electrofrio"
-      :rows="equipos"
-      :columns="columns"
-      row-key="id"
-      :loading="loading"
-      flat
-      bordered
-      no-data-label="No hay equipos registrados"
+    <q-card class="content-card q-mb-md">
+      <q-card-section>
+        <q-input
+          v-model="buscar"
+          outlined
+          dense
+          clearable
+          debounce="400"
+          label="Buscar por tipo, marca, modelo, serie, ubicación o cliente"
+          @update:model-value="cargarEquipos"
+        >
+          <template #prepend><q-icon name="search" /></template>
+        </q-input>
+      </q-card-section>
+    </q-card>
+
+    <q-banner v-if="error" class="bg-red-1 text-red q-mb-md rounded-borders">{{
+      error
+    }}</q-banner>
+
+    <q-card class="content-card">
+      <q-table
+        title="Catálogo de equipos"
+        :rows="equipos"
+        :columns="columns"
+        row-key="id"
+        :loading="loading"
+        :rows-per-page-options="[10, 20, 50, 0]"
+        no-data-label="No hay equipos registrados"
+      >
+        <template #body-cell-equipo="props">
+          <q-td :props="props">
+            <div class="text-weight-bold">{{ props.row.tipo }}</div>
+            <div class="text-caption text-grey-7">
+              {{
+                [props.row.marca, props.row.modelo]
+                  .filter(Boolean)
+                  .join(' · ') || 'Sin marca/modelo'
+              }}
+            </div>
+          </q-td>
+        </template>
+
+        <template #body-cell-historial="props">
+          <q-td :props="props">
+            <q-chip dense outline color="primary" icon="history">
+              {{ props.row.citas_count || 0 }} trabajos
+            </q-chip>
+          </q-td>
+        </template>
+
+        <template #body-cell-activo="props">
+          <q-td :props="props">
+            <q-chip
+              dense
+              :color="props.row.activo ? 'positive' : 'grey'"
+              text-color="white"
+            >
+              {{ props.row.activo ? 'Activo' : 'Inactivo' }}
+            </q-chip>
+          </q-td>
+        </template>
+
+        <template #body-cell-acciones="props">
+          <q-td :props="props" class="table-actions">
+            <ActionMenu
+              @view="abrirVer(props.row)"
+              @edit="abrirEditar(props.row)"
+              @delete="eliminarEquipo(props.row)"
+            />
+          </q-td>
+        </template>
+      </q-table>
+    </q-card>
+
+    <q-dialog
+      v-model="dialogo"
+      persistent
+      maximized
+      transition-show="slide-left"
+      transition-hide="slide-right"
     >
-      <template #body-cell-equipo="props">
-        <q-td :props="props">
-          <div class="text-weight-bold text-primary">
-            {{ props.row.tipo || 'Equipo sin tipo' }}
+      <q-card class="workspace-dialog">
+        <q-card-section class="bg-primary text-white">
+          <div class="row items-center justify-between no-wrap">
+            <div>
+              <div class="text-h6">{{ tituloDialogo }}</div>
+              <div class="text-caption text-blue-1"
+                >Ficha única del equipo y trazabilidad de sus trabajos</div
+              >
+            </div>
+            <q-btn flat round dense icon="close" v-close-popup />
           </div>
-
-          <div class="text-caption text-grey-7">
-            {{ props.row.marca || 'Sin marca' }} - {{ props.row.modelo || 'Sin modelo' }}
-          </div>
-        </q-td>
-      </template>
-
-      <template #body-cell-cliente="props">
-        <q-td :props="props">
-          <div>
-            👤 {{ props.row.cliente?.nombre || 'Sin cliente' }}
-          </div>
-
-          <div class="text-caption text-cyan-8">
-            ❄ {{ props.row.capacidad || 'Sin capacidad' }}
-          </div>
-        </q-td>
-      </template>
-
-      <template #body-cell-acciones="props">
-        <q-td :props="props" class="q-gutter-xs text-center">
-          <q-btn
-            size="sm"
-            round
-            unelevated
-            color="primary"
-            icon="edit"
-            @click="editar(props.row)"
-          />
-
-          <q-btn
-            size="sm"
-            round
-            unelevated
-            color="negative"
-            icon="delete"
-            @click="eliminar(props.row.id)"
-          />
-        </q-td>
-      </template>
-    </q-table>
-
-    <q-dialog v-model="dialog" persistent>
-      <q-card class="dialog-card">
-        <q-card-section class="dialog-header row items-center">
-          <div class="text-h6">
-            {{ editando ? 'Editar Equipo' : 'Nuevo Equipo' }}
-          </div>
-
-          <q-space />
-
-          <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
-        <q-scroll-area class="dialog-scroll">
-          <q-card-section class="q-gutter-md q-pt-lg">
+        <q-card-section class="row q-col-gutter-md">
+          <div class="col-12 col-md-6">
             <q-select
               v-model="form.cliente_id"
-              :options="clientes"
-              label="Cliente propietario"
-              option-label="nombre"
-              option-value="id"
+              :options="clientesOptions"
               emit-value
               map-options
+              label="Cliente propietario"
               outlined
-              dense
-              rounded
+              clearable
+              :readonly="modo === 'ver'"
             />
-
+          </div>
+          <div class="col-12 col-md-6">
             <q-select
               v-model="form.tipo"
-              :options="tiposEquipo"
+              :options="tipoEquipoOptions"
               label="Tipo de equipo"
               outlined
-              dense
-              rounded
-            />
-
-            <div class="row q-col-gutter-sm form-row-responsive">
-              <q-select
-                class="col-6"
-                v-model="form.marca"
-                :options="marcas"
-                label="Marca"
-                outlined
-                dense
-                rounded
-                use-input
-                input-debounce="0"
-                new-value-mode="add-unique"
-              />
-
-              <q-input
-                class="col-6"
-                v-model.trim="form.modelo"
-                label="Modelo"
-                outlined
-                dense
-                rounded
-              />
-            </div>
-
-            <q-select
-              v-model="form.capacidad"
-              :options="capacidades"
-              label="Capacidad"
-              outlined
-              dense
-              rounded
               use-input
+              fill-input
+              hide-selected
               input-debounce="0"
               new-value-mode="add-unique"
+              :readonly="modo === 'ver'"
             />
-          </q-card-section>
-        </q-scroll-area>
+          </div>
+          <div class="col-12 col-md-4">
+            <q-select
+              v-model="form.marca"
+              :options="marcaOptions"
+              label="Marca"
+              outlined
+              use-input
+              fill-input
+              hide-selected
+              input-debounce="0"
+              new-value-mode="add-unique"
+              :readonly="modo === 'ver'"
+            />
+          </div>
+          <div class="col-12 col-md-4">
+            <q-input
+              v-model="form.modelo"
+              label="Modelo"
+              outlined
+              :readonly="modo === 'ver'"
+            />
+          </div>
+          <div class="col-12 col-md-4">
+            <q-input
+              v-model="form.serie"
+              label="Serie / placa"
+              outlined
+              :readonly="modo === 'ver'"
+            />
+          </div>
+          <div class="col-12 col-md-8">
+            <q-input
+              v-model="form.ubicacion"
+              label="Ubicación del equipo"
+              outlined
+              :readonly="modo === 'ver'"
+            />
+          </div>
+          <div class="col-12 col-md-4">
+            <q-toggle
+              v-model="form.activo"
+              label="Equipo activo"
+              :disable="modo === 'ver'"
+            />
+          </div>
+          <div class="col-12">
+            <q-input
+              v-model="form.observacion"
+              label="Observación técnica"
+              outlined
+              type="textarea"
+              rows="3"
+              :readonly="modo === 'ver'"
+            />
+          </div>
+        </q-card-section>
 
-        <q-card-actions align="right" class="dialog-actions">
-          <q-btn
-            flat
-            label="Cancelar"
-            color="grey-7"
-            v-close-popup
-          />
+        <q-separator v-if="modo === 'ver'" />
+        <q-card-section v-if="modo === 'ver'">
+          <div class="text-subtitle1 text-weight-bold text-primary q-mb-sm"
+            >Historial técnico del equipo</div
+          >
+          <q-list
+            v-if="historialEquipo.length"
+            bordered
+            separator
+            class="rounded-borders"
+          >
+            <q-item v-for="cita in historialEquipo" :key="cita.id">
+              <q-item-section avatar
+                ><q-icon name="engineering" color="primary"
+              /></q-item-section>
+              <q-item-section>
+                <q-item-label class="text-weight-bold">{{
+                  cita.servicio?.nombre || 'Servicio técnico'
+                }}</q-item-label>
+                <q-item-label caption
+                  >{{ formatearFecha(cita.fecha) }} ·
+                  {{
+                    cita.cliente?.nombre ||
+                    form.cliente?.nombre ||
+                    'Sin cliente'
+                  }}</q-item-label
+                >
+                <q-item-label
+                  caption
+                  v-if="cita.detalle_tecnico || cita.detalleTecnico"
+                >
+                  {{
+                    (cita.detalle_tecnico || cita.detalleTecnico).diagnostico ||
+                    'Detalle técnico registrado'
+                  }}
+                </q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-chip
+                  dense
+                  :color="colorEstado(cita.estado)"
+                  text-color="white"
+                  >{{ textoEstado(cita.estado) }}</q-chip
+                >
+                <div class="text-caption text-right q-mt-xs"
+                  >Bs {{ Number(cita.total || 0).toFixed(2) }}</div
+                >
+              </q-item-section>
+            </q-item>
+          </q-list>
+          <q-banner v-else rounded class="bg-blue-1 text-primary">
+            Este equipo todavía no tiene atenciones registradas. Cuando crees
+            una atención con este equipo, su historial aparecerá aquí.
+          </q-banner>
+        </q-card-section>
 
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn flat label="Cerrar" color="grey-8" v-close-popup />
           <q-btn
-            class="btn-electrofrio"
-            :label="editando ? 'Actualizar' : 'Guardar'"
-            @click="guardar"
-            :loading="submitting"
+            v-if="modo !== 'ver'"
+            color="primary"
+            icon="save"
+            :label="modo === 'crear' ? 'Guardar equipo' : 'Actualizar equipo'"
+            @click="guardarEquipo"
           />
         </q-card-actions>
       </q-card>
@@ -170,318 +274,246 @@
   </q-page>
 </template>
 
-<script>
-import { api } from 'boot/axios'
+<script setup>
+import { computed, onMounted, ref } from 'vue'
+import { date, useQuasar } from 'quasar'
+import ActionMenu from '../components/ActionMenu.vue'
+import api, { extraerMensajeError } from '../services/api.js'
 
-export default {
-  name: 'EquiposPage',
+const $q = useQuasar()
+const loading = ref(false)
+const error = ref('')
+const buscar = ref('')
+const equipos = ref([])
+const clientes = ref([])
+const dialogo = ref(false)
+const modo = ref('crear')
+const equipoId = ref(null)
+const historialEquipo = ref([])
 
-  data() {
-    return {
-      loading: false,
-      submitting: false,
-      dialog: false,
-      editando: false,
-      equipos: [],
-      clientes: [],
+const tipoEquipoOptions = [
+  'Aire acondicionado Split',
+  'Aire acondicionado ventana',
+  'Aire acondicionado central',
+  'Refrigerador',
+  'Freezer',
+  'Cámara frigorífica',
+  'Vitrina refrigerada',
+  'Enfriador comercial',
+  'Lavadora',
+  'Otro'
+]
 
-      tiposEquipo: [
-        'Aire acondicionado Split',
-        'Aire acondicionado de ventana',
-        'Aire acondicionado portátil',
-        'Aire acondicionado central'
-      ],
+const marcaOptions = [
+  'LG',
+  'Samsung',
+  'Mabe',
+  'Consul',
+  'Whirlpool',
+  'Electrolux',
+  'Carrier',
+  'York',
+  'Midea',
+  'TCL',
+  'Hisense',
+  'General Lux',
+  'Otro'
+]
+const formInicial = {
+  cliente_id: null,
+  tipo: '',
+  marca: '',
+  modelo: '',
+  serie: '',
+  ubicacion: '',
+  observacion: '',
+  activo: true
+}
+const form = ref({ ...formInicial })
 
-      marcas: [
-        'LG',
-        'Samsung',
-        'Midea',
-        'TCL',
-        'Hisense',
-        'Panasonic',
-        'Daikin',
-        'Carrier',
-        'Gree'
-      ],
+const clientesOptions = computed(() =>
+  clientes.value.map(cliente => ({ label: cliente.nombre, value: cliente.id }))
+)
 
-      capacidades: [
-        '9.000 BTU',
-        '12.000 BTU',
-        '18.000 BTU',
-        '24.000 BTU',
-        '36.000 BTU'
-      ],
-
-      form: this.formVacio(),
-
-      columns: [
-        { name: 'equipo', label: 'Equipo', align: 'left' },
-        { name: 'cliente', label: 'Cliente / Capacidad', align: 'left' },
-        { name: 'acciones', label: 'Acciones', align: 'center' }
-      ]
-    }
+const columns = [
+  { name: 'acciones', label: '', field: 'acciones', align: 'center' },
+  {
+    name: 'cliente',
+    label: 'Cliente',
+    field: row => row.cliente?.nombre || 'Sin cliente',
+    align: 'left',
+    sortable: true
   },
-
-  mounted() {
-    this.initData()
+  {
+    name: 'equipo',
+    label: 'Equipo',
+    field: 'tipo',
+    align: 'left',
+    sortable: true
   },
+  {
+    name: 'serie',
+    label: 'Serie',
+    field: row => row.serie || '—',
+    align: 'left'
+  },
+  {
+    name: 'ubicacion',
+    label: 'Ubicación',
+    field: row => row.ubicacion || '—',
+    align: 'left'
+  },
+  {
+    name: 'historial',
+    label: 'Historial',
+    field: row => row.citas_count || 0,
+    align: 'center'
+  },
+  { name: 'activo', label: 'Estado', field: 'activo', align: 'center' }
+]
 
-  methods: {
-    formVacio() {
-      return {
-        id: null,
-        cliente_id: null,
-        tipo: '',
-        marca: '',
-        modelo: '',
-        capacidad: ''
-      }
-    },
+const tituloDialogo = computed(() =>
+  modo.value === 'crear'
+    ? 'Registrar equipo'
+    : modo.value === 'editar'
+      ? 'Editar equipo'
+      : 'Ver equipo'
+)
 
-    obtenerLista(res) {
-      return Array.isArray(res.data) ? res.data : (res.data?.data || [])
-    },
+const limpiarFormulario = () => {
+  form.value = { ...formInicial }
+  equipoId.value = null
+  historialEquipo.value = []
+}
 
-    mensajeError(error, defecto) {
-      const errores = error.response?.data?.errors
-      if (errores) return Object.values(errores).flat()[0]
-      return error.response?.data?.message || error.response?.data?.mensaje || defecto
-    },
+const cargarClientes = async () => {
+  const response = await api.get('/clientes')
+  clientes.value = response.data.data || []
+}
 
-    async initData() {
-      this.loading = true
+const cargarEquipos = async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    const response = await api.get('/equipos', {
+      params: { buscar: buscar.value || undefined }
+    })
+    equipos.value = response.data.data || []
+  } catch (err) {
+    error.value = extraerMensajeError(
+      err,
+      'No se pudo cargar la lista de equipos.'
+    )
+  } finally {
+    loading.value = false
+  }
+}
 
-      try {
-        const [resEquipos, resClientes] = await Promise.all([
-          api.get('/equipos'),
-          api.get('/clientes')
-        ])
+const abrirCrear = async () => {
+  modo.value = 'crear'
+  limpiarFormulario()
+  await cargarClientes()
+  dialogo.value = true
+}
 
-        this.equipos = this.obtenerLista(resEquipos)
-        this.clientes = this.obtenerLista(resClientes)
-      } catch (error) {
-        this.$q.notify({
-          type: 'negative',
-          message: this.mensajeError(error, 'Error al cargar equipos')
-        })
-      } finally {
-        this.loading = false
-      }
-    },
+const abrirVer = async item => {
+  modo.value = 'ver'
+  equipoId.value = item.id
+  await cargarClientes()
+  const response = await api.get(`/equipos/${item.id}`)
+  const equipo = response.data.data || item
+  form.value = {
+    ...equipo,
+    cliente_id: equipo.cliente_id || equipo.cliente?.id || null
+  }
+  historialEquipo.value = [...(equipo.citas || [])].sort((a, b) =>
+    String(b.fecha || '').localeCompare(String(a.fecha || ''))
+  )
+  dialogo.value = true
+}
 
-    abrirDialog() {
-      this.form = this.formVacio()
-      this.editando = false
-      this.dialog = true
-    },
+const abrirEditar = async item => {
+  modo.value = 'editar'
+  equipoId.value = item.id
+  await cargarClientes()
+  form.value = {
+    ...item,
+    cliente_id: item.cliente_id || item.cliente?.id || null
+  }
+  dialogo.value = true
+}
 
-    validar() {
-      if (!this.form.cliente_id) {
-        this.$q.notify({
-          type: 'warning',
-          message: 'Selecciona un cliente'
-        })
-        return false
-      }
+const guardarEquipo = async () => {
+  if (!form.value.tipo) {
+    $q.notify({ type: 'warning', message: 'El tipo de equipo es obligatorio' })
+    return
+  }
 
-      if (!this.form.tipo) {
-        this.$q.notify({
-          type: 'warning',
-          message: 'El tipo de equipo es obligatorio'
-        })
-        return false
-      }
+  try {
+    if (modo.value === 'crear') await api.post('/equipos', form.value)
+    else await api.put(`/equipos/${equipoId.value}`, form.value)
 
-      return true
-    },
+    $q.notify({ type: 'positive', message: 'Equipo guardado correctamente' })
+    dialogo.value = false
+    limpiarFormulario()
+    cargarEquipos()
+  } catch (err) {
+    $q.notify({
+      type: 'negative',
+      message: extraerMensajeError(err, 'No se pudo guardar el equipo')
+    })
+  }
+}
 
-    async guardar() {
-      if (!this.validar()) return
+const formatearFecha = value =>
+  value ? date.formatDate(value, 'DD/MM/YYYY') : '—'
+const textoEstado = estado =>
+  ({
+    pendiente: 'Pendiente',
+    revision: 'En revisión',
+    en_proceso: 'En proceso',
+    esperando_repuesto: 'Esperando repuesto',
+    terminado: 'Terminado',
+    entregado: 'Entregado',
+    concluida: 'Terminado',
+    cancelada: 'Cancelado'
+  })[estado] ||
+  estado ||
+  'Sin estado'
+const colorEstado = estado =>
+  ({
+    pendiente: 'warning',
+    revision: 'orange',
+    en_proceso: 'info',
+    esperando_repuesto: 'deep-orange',
+    terminado: 'teal',
+    entregado: 'positive',
+    concluida: 'teal',
+    cancelada: 'negative'
+  })[estado] || 'grey'
 
-      this.submitting = true
-
-      try {
-        const payload = {
-          cliente_id: this.form.cliente_id,
-          tipo: this.form.tipo,
-          marca: this.form.marca || null,
-          modelo: this.form.modelo || null,
-          capacidad: this.form.capacidad || null
-        }
-
-        if (this.editando) {
-          await api.put(`/equipos/${this.form.id}`, payload)
-        } else {
-          await api.post('/equipos', payload)
-        }
-
-        this.$q.notify({
-          type: 'positive',
-          message: this.editando ? 'Equipo actualizado' : 'Equipo registrado'
-        })
-
-        this.dialog = false
-        await this.initData()
-      } catch (error) {
-        this.$q.notify({
-          type: 'negative',
-          message: this.mensajeError(error, 'Error al guardar equipo')
-        })
-      } finally {
-        this.submitting = false
-      }
-    },
-
-    editar(row) {
-      this.form = {
-        id: row.id,
-        cliente_id: row.cliente_id,
-        tipo: row.tipo || '',
-        marca: row.marca || '',
-        modelo: row.modelo || '',
-        capacidad: row.capacidad || ''
-      }
-
-      this.editando = true
-      this.dialog = true
-    },
-
-    eliminar(id) {
-      const equipo = this.equipos.find(e => Number(e.id) === Number(id))
-
-      this.$q.dialog({
-        title: 'Eliminar equipo',
-        message: '¿Borrar este equipo? Se guardará en historial.',
-        cancel: true,
-        persistent: true
-      }).onOk(async () => {
-        try {
-          if (equipo) {
-            const historial = JSON.parse(localStorage.getItem('equipos_eliminados') || '[]')
-
-            historial.unshift({
-              ...equipo,
-              fecha_eliminacion: new Date().toLocaleString()
-            })
-
-            localStorage.setItem('equipos_eliminados', JSON.stringify(historial))
-          }
-
-          await api.delete(`/equipos/${id}`)
-
-          this.$q.notify({
-            type: 'positive',
-            message: 'Equipo eliminado y guardado en historial'
-          })
-
-          await this.initData()
-        } catch (error) {
-          this.$q.notify({
-            type: 'negative',
-            message: this.mensajeError(error, 'No se pudo eliminar el equipo')
-          })
-        }
+const eliminarEquipo = item => {
+  $q.dialog({
+    title: 'Confirmar eliminación',
+    message: `¿Eliminar el equipo ${item.tipo}?`,
+    cancel: true,
+    persistent: true
+  }).onOk(async () => {
+    try {
+      await api.delete(`/equipos/${item.id}`)
+      $q.notify({ type: 'positive', message: 'Equipo eliminado correctamente' })
+      cargarEquipos()
+    } catch (err) {
+      $q.notify({
+        type: 'negative',
+        message: extraerMensajeError(err, 'No se pudo eliminar el equipo')
       })
     }
-  }
+  })
 }
+
+onMounted(() => {
+  cargarEquipos()
+  cargarClientes()
+})
 </script>
-
-<style scoped>
-.equipos-page {
-  min-height: 100vh;
-}
-
-.tabla-electrofrio {
-  border-radius: 24px;
-  overflow: hidden;
-  box-shadow: 0 14px 35px rgba(13, 71, 161, 0.12);
-  background: white;
-}
-
-.tabla-electrofrio :deep(.q-table thead tr) {
-  background: linear-gradient(135deg, #0d47a1, #c62828);
-  color: white;
-}
-
-.tabla-electrofrio :deep(.q-table th) {
-  font-weight: 700;
-  font-size: 14px;
-}
-
-.tabla-electrofrio :deep(.q-table tbody tr:hover) {
-  background: #eef4ff;
-}
-
-.dialog-card {
-  width: 460px;
-  max-width: 95vw;
-  max-height: 90vh;
-  border-radius: 22px;
-  overflow: hidden;
-}
-
-.dialog-scroll {
-  max-height: 65vh;
-}
-
-.dialog-actions {
-  padding: 12px 18px 18px 18px;
-  background: white;
-  border-top: 1px solid #eeeeee;
-}
-
-.dialog-header {
-  background: linear-gradient(135deg, #0d47a1, #c62828);
-  color: white;
-}
-
-@media (max-width: 600px) {
-  .equipos-page {
-    padding: 10px;
-  }
-
-  .page-header {
-    gap: 12px;
-  }
-
-  .btn-page {
-    width: 100%;
-  }
-
-  .dialog-card {
-    width: 95vw;
-    max-width: 95vw;
-    border-radius: 18px;
-  }
-
-  .dialog-scroll {
-    max-height: 70vh;
-  }
-
-  .form-row-responsive {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .form-row-responsive > div,
-  .form-row-responsive .col-6 {
-    width: 100% !important;
-    max-width: 100% !important;
-    flex: 0 0 100% !important;
-  }
-
-  .dialog-actions {
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  .dialog-actions .q-btn {
-    flex: 1;
-  }
-
-  .tabla-electrofrio {
-    border-radius: 16px;
-  }
-}
-</style>
