@@ -1,0 +1,28 @@
+{
+  "name": "Electro Frío - Gestión Técnica",
+  "short_name": "Electro Frío",
+  "description": "Sistema de gestión de clientes, equipos, atenciones, mensajes y pagos.",
+  "start_url": "/#/login",
+  "scope": "/",
+  "id": "/#/login",
+  "lang": "es-BO",
+  "orientation": "any",
+  "background_color": "#f4fafc",
+  "theme_color": "#075f75",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "display": "standalone",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "icons/favicon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/electrofrio-pwa.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
