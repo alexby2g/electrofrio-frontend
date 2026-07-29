@@ -1,0 +1,63 @@
+name: Compilar APK Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - release/v13.3
+    paths:
+      - "src/**"
+      - "src-capacitor/**"
+      - "public/**"
+      - "package.json"
+      - "package-lock.json"
+      - "quasar.config.js"
+      - ".github/workflows/android-apk.yml"
+
+jobs:
+  android:
+    name: Electro Frio Android
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar proyecto
+        uses: actions/checkout@v4
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configurar Android
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Crear proyecto Android
+        working-directory: src-capacitor
+        run: npx cap add android
+
+      - name: Compilar interfaz y sincronizar
+        run: npx quasar build -m capacitor -T android --skip-pkg
+        env:
+          VITE_API_URL: https://electrofrio-api.onrender.com/api
+
+      - name: Compilar APK
+        working-directory: src-capacitor/android
+        run: ./gradlew assembleDebug
+
+      - name: Publicar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ElectroFrio-Android
+          path: src-capacitor/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
