@@ -11,6 +11,15 @@
       </div>
       <div class="q-gutter-sm">
         <q-btn
+          v-if="esAplicacionNativa()"
+          outline
+          color="primary"
+          icon="contacts"
+          label="Importar contacto"
+          :loading="cargandoContactos"
+          @click="abrirContactos"
+        />
+        <q-btn
           color="primary"
           icon="person_add"
           label="Nuevo cliente"
@@ -48,6 +57,57 @@
         </q-input>
       </q-card-section>
     </q-card>
+
+    <q-dialog v-model="dialogoContactos">
+      <q-card style="width: min(680px, 96vw); max-width: 680px">
+        <q-card-section class="row items-center">
+          <div>
+            <div class="text-h6">Contactos del teléfono</div>
+            <div class="text-caption text-grey-7">
+              Selecciona uno para completar el nombre y teléfono del cliente.
+            </div>
+          </div>
+          <q-space />
+          <q-btn flat round dense icon="close" v-close-popup />
+        </q-card-section>
+        <q-card-section>
+          <q-input
+            v-model="buscarContacto"
+            outlined
+            dense
+            clearable
+            label="Buscar contacto"
+          >
+            <template #prepend><q-icon name="search" /></template>
+          </q-input>
+        </q-card-section>
+        <q-list separator style="max-height: 55vh; overflow: auto">
+          <q-item
+            v-for="contacto in contactosFiltrados"
+            :key="contacto.id"
+            clickable
+            v-close-popup
+            @click="seleccionarContacto(contacto)"
+          >
+            <q-item-section avatar>
+              <q-avatar color="primary" text-color="white">
+                {{ iniciales(contacto.nombre) }}
+              </q-avatar>
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>{{ contacto.nombre }}</q-item-label>
+              <q-item-label caption>{{ contacto.telefono }}</q-item-label>
+            </q-item-section>
+            <q-item-section side><q-icon name="person_add" /></q-item-section>
+          </q-item>
+          <q-item v-if="!contactosFiltrados.length">
+            <q-item-section class="text-grey-7 text-center">
+              No se encontraron contactos con teléfono.
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-card>
+    </q-dialog>
 
     <q-banner v-if="error" class="bg-red-1 text-red q-mb-md rounded-borders">
       {{ error }}
@@ -489,6 +549,11 @@ import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import ActionMenu from '../components/ActionMenu.vue'
 import api, { extraerMensajeError } from '../services/api.js'
+import {
+  esAplicacionNativa,
+  importarContactos,
+  notificarEvento
+} from '../services/native.js'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -501,6 +566,10 @@ const buscar = ref('')
 const clientes = ref([])
 const dialogo = ref(false)
 const dialogoEquipo = ref(false)
+const dialogoContactos = ref(false)
+const cargandoContactos = ref(false)
+const buscarContacto = ref('')
+const contactos = ref([])
 const modo = ref('crear')
 const clienteId = ref(null)
 const equipoId = ref(null)
@@ -662,6 +731,12 @@ const tituloDialogo = computed(() =>
 const tituloEquipo = computed(() =>
   equipoId.value ? 'Editar equipo' : 'Agregar equipo'
 )
+const contactosFiltrados = computed(() => {
+  const texto = String(buscarContacto.value || '').toLowerCase()
+  return contactos.value.filter(contacto =>
+    `${contacto.nombre} ${contacto.telefono}`.toLowerCase().includes(texto)
+  )
+})
 
 const iniciales = nombre =>
   String(nombre || 'C')
@@ -764,6 +839,28 @@ const abrirCrear = () => {
   dialogo.value = true
 }
 
+const abrirContactos = async () => {
+  cargandoContactos.value = true
+  try {
+    contactos.value = await importarContactos()
+    buscarContacto.value = ''
+    dialogoContactos.value = true
+  } catch (err) {
+    $q.notify({
+      type: 'warning',
+      message: err?.message || 'No se pudieron leer los contactos.'
+    })
+  } finally {
+    cargandoContactos.value = false
+  }
+}
+
+const seleccionarContacto = contacto => {
+  abrirCrear()
+  form.value.nombre = contacto.nombre
+  form.value.telefono = contacto.telefono
+}
+
 const abrirExpediente = async cliente => {
   modo.value = 'ver'
   clienteId.value = cliente.id
@@ -783,6 +880,7 @@ const guardarCliente = async () => {
   if (!ok) return
   guardandoCliente.value = true
   try {
+    const esNuevo = !clienteId.value
     const { data } = clienteId.value
       ? await api.put(`/clientes/${clienteId.value}`, form.value)
       : await api.post('/clientes', form.value)
@@ -791,6 +889,13 @@ const guardarCliente = async () => {
     clienteId.value = guardado.id
     modo.value = 'ver'
     $q.notify({ type: 'positive', message: 'Cliente guardado correctamente' })
+    if (esNuevo) {
+      await notificarEvento({
+        titulo: 'Cliente registrado',
+        mensaje: `${guardado.nombre} fue agregado correctamente.`,
+        extra: { tipo: 'cliente_registrado', cliente_id: guardado.id }
+      }).catch(() => null)
+    }
     await Promise.all([cargarClientes(), cargarExpediente(guardado.id)])
     tabCliente.value = clienteDetalle.value.equipos.length ? 'datos' : 'equipos'
   } catch (err) {
