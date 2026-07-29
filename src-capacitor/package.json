@@ -1,0 +1,12 @@
+{
+  "name": "electrofrio-android",
+  "version": "1.0.0",
+  "description": "Aplicación Android de Electro Frío",
+  "private": true,
+  "dependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/app": "^8.0.0",
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0"
+  }
+}
