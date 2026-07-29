@@ -19,7 +19,8 @@
     "lint:check": "oxfmt --check && oxlint",
     "dev": "quasar dev",
     "build": "quasar build",
-    "postinstall": "quasar prepare --silent"
+    "build:pwa": "quasar build -m pwa",
+    "postinstall": "quasar prepare --silent && npm --prefix src-pwa install --silent"
   },
   "dependencies": {
     "@quasar/extras": "^2.0.0",
