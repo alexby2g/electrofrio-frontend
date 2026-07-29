@@ -201,6 +201,11 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api, { extraerMensajeError } from '../services/api.js'
 import { guardarSesion } from '../services/auth.js'
+import {
+  activarNotificaciones,
+  notificarEvento,
+  notificacionesActivas
+} from '../services/native.js'
 import logoElectroFrio from '../assets/electrofrio-mark.png'
 
 const route = useRoute()
@@ -315,6 +320,14 @@ const verificarOtp = async () => {
 
 const completarIngreso = async data => {
   guardarSesion(data)
+  if (!notificacionesActivas()) {
+    await activarNotificaciones().catch(() => null)
+  }
+  await notificarEvento({
+    titulo: 'Sesión iniciada',
+    mensaje: `Bienvenido a Electro Frío${data.usuario?.name ? `, ${data.usuario.name}` : ''}.`,
+    extra: { tipo: 'inicio_sesion' }
+  }).catch(() => null)
   const destino =
     typeof route.query.redirect === 'string' ? route.query.redirect : '/'
   await router.replace(destino)
