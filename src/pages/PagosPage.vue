@@ -260,6 +260,7 @@ import { computed, onMounted, ref } from 'vue'
 import { date, useQuasar } from 'quasar'
 import ActionMenu from '../components/ActionMenu.vue'
 import api, { extraerMensajeError } from '../services/api.js'
+import { notificarEvento } from '../services/native.js'
 
 const $q = useQuasar()
 const loading = ref(false)
@@ -472,10 +473,18 @@ const guardarPago = async () => {
   }
 
   try {
-    if (modo.value === 'crear') await api.post('/pagos', form.value)
+    const esNuevo = modo.value === 'crear'
+    if (esNuevo) await api.post('/pagos', form.value)
     else await api.put(`/pagos/${pagoId.value}`, form.value)
 
     $q.notify({ type: 'positive', message: 'Pago guardado correctamente' })
+    if (esNuevo) {
+      await notificarEvento({
+        titulo: 'Pago registrado',
+        mensaje: `${clientePagoNombre.value} · Bs ${Number(form.value.monto || 0).toFixed(2)}`,
+        extra: { tipo: 'pago_registrado' }
+      }).catch(() => null)
+    }
     dialogo.value = false
     limpiarFormulario()
     cargarPagos()
