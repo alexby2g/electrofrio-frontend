@@ -6,13 +6,13 @@ on:
     branches:
       - release/v13.3
     paths:
-      - "src/**"
-      - "src-capacitor/**"
-      - "public/**"
-      - "package.json"
-      - "package-lock.json"
-      - "quasar.config.js"
-      - ".github/workflows/android-apk.yml"
+      - 'src/**'
+      - 'src-capacitor/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'quasar.config.js'
+      - '.github/workflows/android-apk.yml'
 
 jobs:
   android:
@@ -33,7 +33,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: '21'
 
       - name: Configurar Android
         uses: android-actions/setup-android@v3
@@ -44,6 +44,17 @@ jobs:
       - name: Crear proyecto Android
         working-directory: src-capacitor
         run: npx cap add android
+
+      - name: Colocar icono oficial de Electro Frío
+        run: |
+          for dir in src-capacitor/android/app/src/main/res/mipmap-*; do
+            if [ -d "$dir" ] && [ "$(basename "$dir")" != "mipmap-anydpi-v26" ]; then
+              cp src/assets/electrofrio-mark.png "$dir/ic_launcher.png"
+              cp src/assets/electrofrio-mark.png "$dir/ic_launcher_round.png"
+            fi
+          done
+          find src-capacitor/android/app/src/main/res/mipmap-anydpi-v26 \
+            -type f -name 'ic_launcher*.xml' -delete 2>/dev/null || true
 
       - name: Compilar interfaz y sincronizar
         run: npx quasar build -m capacitor -T android --skip-pkg
