@@ -62,6 +62,23 @@
               </q-item-section>
             </q-item>
             <q-separator />
+            <q-item
+              v-if="!aplicacionInstalada"
+              clickable
+              v-close-popup
+              @click="instalarAplicacion"
+            >
+              <q-item-section avatar>
+                <q-icon name="install_mobile" color="primary" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Instalar aplicación</q-item-label>
+                <q-item-label caption>
+                  Agrega Electro Frío al celular o computadora
+                </q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-separator v-if="!aplicacionInstalada" />
             <q-item class="q-py-md">
               <q-item-section>
                 <q-item-label class="text-weight-bold">
@@ -192,6 +209,8 @@ const drawerHovered = ref(false)
 const usuario = ref(obtenerUsuario())
 const mensajesNoLeidos = ref(0)
 const tema = ref(obtenerTema())
+const aplicacionInstalada = ref(false)
+const eventoInstalacion = ref(null)
 let temporizadorMensajes = null
 
 const temaOptions = [
@@ -257,13 +276,54 @@ const menuGroups = computed(() => [
 ])
 
 onMounted(() => {
+  aplicacionInstalada.value =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true
+  window.addEventListener('beforeinstallprompt', capturarInstalacion)
+  window.addEventListener('appinstalled', confirmarInstalacion)
   cargarMensajesNoLeidos()
   temporizadorMensajes = window.setInterval(cargarMensajesNoLeidos, 10000)
 })
 
 onUnmounted(() => {
+  window.removeEventListener('beforeinstallprompt', capturarInstalacion)
+  window.removeEventListener('appinstalled', confirmarInstalacion)
   if (temporizadorMensajes) window.clearInterval(temporizadorMensajes)
 })
+
+const capturarInstalacion = evento => {
+  evento.preventDefault()
+  eventoInstalacion.value = evento
+}
+
+const confirmarInstalacion = () => {
+  aplicacionInstalada.value = true
+  eventoInstalacion.value = null
+  $q.notify({
+    type: 'positive',
+    message: 'Electro Frío se instaló correctamente.'
+  })
+}
+
+const instalarAplicacion = async () => {
+  if (eventoInstalacion.value) {
+    await eventoInstalacion.value.prompt()
+    eventoInstalacion.value = null
+    return
+  }
+
+  const esIphone =
+    /iphone|ipad|ipod/i.test(window.navigator.userAgent) &&
+    !window.navigator.standalone
+
+  $q.dialog({
+    title: 'Instalar Electro Frío',
+    message: esIphone
+      ? 'En Safari, toca Compartir y luego “Agregar a inicio”.'
+      : 'Abre el menú del navegador y selecciona “Instalar aplicación” o “Agregar a pantalla de inicio”.',
+    ok: 'Entendido'
+  })
+}
 
 const cargarMensajesNoLeidos = async () => {
   try {
