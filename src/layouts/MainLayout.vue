@@ -80,6 +80,7 @@ export default {
       menu: [
         { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
         { to: '/clientes', icon: 'people', label: 'Clientes' },
+        { to: '/whatsapp', icon: 'chat', label: 'WhatsApp', caption: 'Cuenta Business' },
         { to: '/tecnicos', icon: 'engineering', label: 'Técnicos' },
         { to: '/equipos', icon: 'ac_unit', label: 'Equipos' },
         { to: '/servicios', icon: 'build', label: 'Servicios' },
