@@ -3,15 +3,7 @@
   "version": "0.0.17",
   "private": true,
   "description": "A Quasar Project",
-  "keywords": [
-    "quasar",
-    "quasar-app",
-    "quasar-app-vite",
-    "quasar-cli",
-    "vite",
-    "vue",
-    "vuejs"
-  ],
+  "keywords": ["quasar", "quasar-app", "quasar-app-vite", "quasar-cli", "vite", "vue", "vuejs"],
   "author": "Alexander Guzman Ribera <alexby2g@gmail.com>",
   "type": "module",
   "scripts": {
@@ -20,7 +12,8 @@
     "dev": "quasar dev",
     "build": "quasar build",
     "build:pwa": "quasar build -m pwa",
-    "postinstall": "quasar prepare --silent && npm --prefix src-pwa install --silent"
+    "build:android": "quasar build -m capacitor -T android",
+    "postinstall": "quasar prepare --silent && npm --prefix src-pwa install --silent && npm --prefix src-capacitor install --silent"
   },
   "dependencies": {
     "@quasar/extras": "^2.0.0",
