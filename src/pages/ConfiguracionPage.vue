@@ -24,6 +24,52 @@
     </q-banner>
 
     <div class="row q-col-gutter-md">
+      <div v-if="esAplicacionNativa()" class="col-12 col-md-6 col-lg-4">
+        <q-card class="content-card full-height config-card">
+          <q-card-section>
+            <div class="row items-start no-wrap">
+              <q-avatar color="accent" text-color="white" size="50px">
+                <q-icon name="notifications_active" />
+              </q-avatar>
+              <div class="q-ml-md">
+                <div class="text-h6 text-weight-bold">
+                  Notificaciones Android
+                </div>
+                <div class="text-body2 text-grey-7 q-mt-xs">
+                  Avisa al iniciar sesión y cuando registras clientes o pagos.
+                </div>
+              </div>
+            </div>
+          </q-card-section>
+          <q-card-section>
+            <q-chip
+              :color="notificacionesHabilitadas ? 'positive' : 'warning'"
+              text-color="white"
+              :icon="
+                notificacionesHabilitadas
+                  ? 'notifications_active'
+                  : 'notifications_off'
+              "
+            >
+              {{
+                notificacionesHabilitadas
+                  ? 'Notificaciones activadas'
+                  : 'Notificaciones desactivadas'
+              }}
+            </q-chip>
+          </q-card-section>
+          <q-space />
+          <q-card-actions align="right" class="q-pa-md">
+            <q-btn
+              color="primary"
+              icon="notifications_active"
+              label="Activar notificaciones"
+              @click="habilitarNotificaciones"
+            />
+          </q-card-actions>
+        </q-card>
+      </div>
+
       <div
         v-for="opcion in opciones"
         :key="opcion.titulo"
@@ -124,10 +170,18 @@
 import { computed, onMounted, ref } from 'vue'
 import api, { extraerMensajeError } from '../services/api.js'
 import { obtenerUsuario } from '../services/auth.js'
+import {
+  activarNotificaciones,
+  esAplicacionNativa,
+  notificacionesActivas
+} from '../services/native.js'
+import { useQuasar } from 'quasar'
 
+const $q = useQuasar()
 const loading = ref(false)
 const error = ref('')
 const whatsapp = ref({})
+const notificacionesHabilitadas = ref(notificacionesActivas())
 const esAdministrador = computed(
   () => obtenerUsuario()?.rol === 'administrador'
 )
@@ -180,6 +234,15 @@ const cargarEstado = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const habilitarNotificaciones = async () => {
+  const resultado = await activarNotificaciones()
+  notificacionesHabilitadas.value = resultado.activas
+  $q.notify({
+    type: resultado.activas ? 'positive' : 'warning',
+    message: resultado.mensaje
+  })
 }
 
 onMounted(cargarEstado)
