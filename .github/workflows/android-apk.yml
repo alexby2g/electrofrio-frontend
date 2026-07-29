@@ -45,6 +45,13 @@ jobs:
         working-directory: src-capacitor
         run: npx cap add android
 
+      - name: Declarar permisos Android
+        run: |
+          manifest="src-capacitor/android/app/src/main/AndroidManifest.xml"
+          sed -i '/<application/i\
+              <uses-permission android:name="android.permission.READ_CONTACTS" />\
+              <uses-permission android:name="android.permission.WRITE_CONTACTS" />' "$manifest"
+
       - name: Colocar icono oficial de Electro Frío
         run: |
           for dir in src-capacitor/android/app/src/main/res/mipmap-*; do
@@ -55,6 +62,9 @@ jobs:
           done
           find src-capacitor/android/app/src/main/res/mipmap-anydpi-v26 \
             -type f -name 'ic_launcher*.xml' -delete 2>/dev/null || true
+          mkdir -p src-capacitor/android/app/src/main/res/drawable
+          cp android-res/drawable/ic_stat_electrofrio.png \
+            src-capacitor/android/app/src/main/res/drawable/ic_stat_electrofrio.png
 
       - name: Compilar interfaz y sincronizar
         run: npx quasar build -m capacitor -T android --skip-pkg

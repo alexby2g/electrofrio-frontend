@@ -6,5 +6,11 @@ module.exports = defineCapacitorConfig({
   webDir: 'www',
   server: {
     androidScheme: 'https'
+  },
+  plugins: {
+    LocalNotifications: {
+      smallIcon: 'ic_stat_electrofrio',
+      iconColor: '#087D91'
+    }
   }
 });
