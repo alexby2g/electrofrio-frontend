@@ -138,25 +138,23 @@
                 </q-item-section>
               </q-item>
 
-              <q-item v-if="sessionInfo.wabaId">
+              <q-item v-if="wabaId">
                 <q-item-section avatar>
                   <q-icon name="business" color="primary" />
                 </q-item-section>
                 <q-item-section>
                   <q-item-label>Cuenta de WhatsApp Business</q-item-label>
-                  <q-item-label caption>{{ sessionInfo.wabaId }}</q-item-label>
+                  <q-item-label caption>{{ wabaId }}</q-item-label>
                 </q-item-section>
               </q-item>
 
-              <q-item v-if="sessionInfo.phoneNumberId">
+              <q-item v-if="phoneNumberId">
                 <q-item-section avatar>
                   <q-icon name="smartphone" color="primary" />
                 </q-item-section>
                 <q-item-section>
                   <q-item-label>Número autorizado</q-item-label>
-                  <q-item-label caption>{{
-                    sessionInfo.phoneNumberId
-                  }}</q-item-label>
+                  <q-item-label caption>{{ phoneNumberId }}</q-item-label>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -255,11 +253,9 @@ export default {
       status: 'disconnected',
       authorizationCode: null,
       lastError: '',
-      sessionInfo: {
-        wabaId: null,
-        phoneNumberId: null,
-        businessId: null
-      }
+      wabaId: null,
+      phoneNumberId: null,
+      businessId: null
     }
   },
 
@@ -338,11 +334,10 @@ export default {
           data.status === 'connected'
         ) {
           this.status = 'connected'
-          this.sessionInfo = {
-            wabaId: data.waba_id || data.wabaId || null,
-            phoneNumberId: data.phone_number_id || data.phoneNumberId || null,
-            businessId: data.business_id || data.businessId || null
-          }
+          this.wabaId = data.waba_id || data.wabaId || null
+          this.phoneNumberId =
+            data.phone_number_id || data.phoneNumberId || null
+          this.businessId = data.business_id || data.businessId || null
         }
       } catch (error) {
         this.lastError = extraerMensajeError(
@@ -370,11 +365,9 @@ export default {
       if (payload.event === 'FINISH') {
         const data = payload.data || {}
 
-        this.sessionInfo = {
-          wabaId: data.waba_id || data.wabaId || null,
-          phoneNumberId: data.phone_number_id || data.phoneNumberId || null,
-          businessId: data.business_id || data.businessId || null
-        }
+        this.wabaId = data.waba_id || data.wabaId || null
+        this.phoneNumberId = data.phone_number_id || data.phoneNumberId || null
+        this.businessId = data.business_id || data.businessId || null
 
         if (this.status !== 'connected') this.status = 'authorized'
         this.saveConnection()
@@ -408,11 +401,9 @@ export default {
       this.status = 'authorizing'
       this.lastError = ''
       this.authorizationCode = null
-      this.sessionInfo = {
-        wabaId: null,
-        phoneNumberId: null,
-        businessId: null
-      }
+      this.wabaId = null
+      this.phoneNumberId = null
+      this.businessId = null
 
       try {
         const FB = await loadFacebookSdk()
@@ -464,23 +455,18 @@ export default {
         const response = await api.post(CONNECT_PATH, {
           code: this.authorizationCode,
           config_id: META_CONFIG_ID,
-          waba_id: this.sessionInfo.wabaId,
-          phone_number_id: this.sessionInfo.phoneNumberId,
-          business_id: this.sessionInfo.businessId
+          waba_id: this.wabaId,
+          phone_number_id: this.phoneNumberId,
+          business_id: this.businessId
         })
 
         const data = response.data?.data || response.data || {}
         this.status = 'connected'
         this.lastError = ''
-        this.sessionInfo = {
-          wabaId: data.waba_id || data.wabaId || this.sessionInfo.wabaId,
-          phoneNumberId:
-            data.phone_number_id ||
-            data.phoneNumberId ||
-            this.sessionInfo.phoneNumberId,
-          businessId:
-            data.business_id || data.businessId || this.sessionInfo.businessId
-        }
+        this.wabaId = data.waba_id || data.wabaId || this.wabaId
+        this.phoneNumberId =
+          data.phone_number_id || data.phoneNumberId || this.phoneNumberId
+        this.businessId = data.business_id || data.businessId || this.businessId
 
         this.$q.notify({
           type: 'positive',
