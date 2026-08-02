@@ -55,6 +55,12 @@ const routes = [
         component: () => import('../pages/ConfiguracionPage.vue')
       },
       {
+        path: 'whatsapp',
+        name: 'whatsapp',
+        component: () => import('../pages/WhatsAppPage.vue'),
+        meta: { roles: ['administrador'] }
+      },
+      {
         path: 'usuarios',
         name: 'usuarios',
         component: () => import('../pages/UsuariosPage.vue'),
