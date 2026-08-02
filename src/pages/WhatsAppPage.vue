@@ -230,7 +230,6 @@ function loadFacebookSdk() {
     script.src = FACEBOOK_SDK_URL
     script.async = true
     script.defer = true
-    script.crossOrigin = 'anonymous'
     script.onerror = () => {
       facebookSdkPromise = null
       reject(new Error('No se pudo cargar Meta SDK.'))
