@@ -32,6 +32,8 @@ export default defineConfig((/* ctx */) => {
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#build
     build: {
+      vueOptionsAPI: true,
+
       target: {
         // browser: 'baseline-widely-available',
         // node: 'node22'
@@ -128,7 +130,7 @@ export default defineConfig((/* ctx */) => {
     pwa: {
       workboxMode: 'GenerateSW',
       injectPWAMetaTags: true,
-      extendPWAGenerateSWOptions (cfg) {
+      extendPWAGenerateSWOptions(cfg) {
         cfg.cleanupOutdatedCaches = true
         cfg.clientsClaim = true
         cfg.skipWaiting = true
