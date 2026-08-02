@@ -147,7 +147,14 @@
             </div>
           </q-card-section>
           <q-space />
-          <q-card-actions align="right" class="q-pa-md">
+          <q-card-actions align="right" class="q-pa-md q-gutter-sm">
+            <q-btn
+              v-if="esAdministrador"
+              color="positive"
+              icon="link"
+              :label="whatsapp.conectado ? 'Ver conexión' : 'Conectar WhatsApp'"
+              to="/whatsapp"
+            />
             <q-btn
               flat
               color="primary"
