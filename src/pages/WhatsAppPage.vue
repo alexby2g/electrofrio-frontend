@@ -182,6 +182,10 @@ const ALLOWED_META_ORIGINS = new Set([
   'https://web.facebook.com',
   'https://business.facebook.com'
 ])
+const EMBEDDED_SIGNUP_FINISH_EVENTS = new Set([
+  'FINISH',
+  'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING'
+])
 
 let facebookSdkPromise = null
 
@@ -251,6 +255,7 @@ export default {
       savingConnection: false,
       status: 'disconnected',
       authorizationCode: null,
+      signupFinished: false,
       lastError: '',
       wabaId: null,
       phoneNumberId: null,
@@ -319,6 +324,7 @@ export default {
   beforeUnmount() {
     window.removeEventListener('message', this.handleEmbeddedSignupMessage)
     this.authorizationCode = null
+    this.signupFinished = false
   },
 
   methods: {
@@ -361,13 +367,24 @@ export default {
 
       if (!payload || payload.type !== 'WA_EMBEDDED_SIGNUP') return
 
-      if (payload.event === 'FINISH') {
+      if (EMBEDDED_SIGNUP_FINISH_EVENTS.has(payload.event)) {
         const data = payload.data || {}
 
         this.wabaId = data.waba_id || data.wabaId || null
         this.phoneNumberId = data.phone_number_id || data.phoneNumberId || null
         this.businessId = data.business_id || data.businessId || null
 
+        if (!this.wabaId || !this.phoneNumberId) {
+          this.connecting = false
+          this.status = 'error'
+          this.authorizationCode = null
+          this.signupFinished = false
+          this.lastError =
+            'Meta completó la autorización, pero no devolvió los identificadores del número. Vuelve a iniciar la conexión.'
+          return
+        }
+
+        this.signupFinished = true
         if (this.status !== 'connected') this.status = 'authorized'
         this.saveConnection()
         return
@@ -377,6 +394,7 @@ export default {
         this.connecting = false
         this.status = 'disconnected'
         this.authorizationCode = null
+        this.signupFinished = false
         this.$q.notify({
           type: 'warning',
           message: 'La conexión con WhatsApp Business fue cancelada.'
@@ -400,6 +418,7 @@ export default {
       this.status = 'authorizing'
       this.lastError = ''
       this.authorizationCode = null
+      this.signupFinished = false
       this.wabaId = null
       this.phoneNumberId = null
       this.businessId = null
@@ -446,7 +465,15 @@ export default {
     },
 
     async saveConnection() {
-      if (!this.authorizationCode || this.savingConnection) return
+      if (
+        !this.authorizationCode ||
+        !this.signupFinished ||
+        !this.wabaId ||
+        !this.phoneNumberId ||
+        this.savingConnection
+      ) {
+        return
+      }
 
       this.savingConnection = true
 
@@ -485,6 +512,7 @@ export default {
         })
       } finally {
         this.authorizationCode = null
+        this.signupFinished = false
         this.connecting = false
         this.savingConnection = false
       }
