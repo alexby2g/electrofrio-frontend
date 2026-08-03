@@ -86,9 +86,9 @@
               class="q-mb-md dashboard-flow-link"
               role="link"
               tabindex="0"
-              @click="irA({ name: 'citas', query: { estado: estado.key } })"
+              @click="irA({ name: 'citas', query: { etapa: estado.key } })"
               @keyup.enter="
-                irA({ name: 'citas', query: { estado: estado.key } })
+                irA({ name: 'citas', query: { etapa: estado.key } })
               "
             >
               <div class="row justify-between q-mb-xs">
@@ -126,14 +126,14 @@
             class="dashboard-table"
             @row-click="(_, row) => abrirAtencion(row)"
           >
-            <template #body-cell-estado="props">
+            <template #body-cell-etapa="props">
               <q-td :props="props">
                 <q-chip
                   dense
-                  :color="colorEstado(props.row.estado)"
+                  :color="colorEtapa(props.row.etapa)"
                   text-color="white"
                 >
-                  {{ textoEstado(props.row.estado) }}
+                  {{ textoEtapa(props.row.etapa) }}
                 </q-chip>
               </q-td>
             </template>
@@ -237,6 +237,7 @@ const dashboard = ref({
   totales: {},
   operacion_diaria: {},
   estado_citas: {},
+  etapa_citas: {},
   ultimas_citas: [],
   servicios_top: [],
   garantias_por_vencer_lista: []
@@ -262,7 +263,7 @@ const columnasCitas = [
     field: row => row.servicio?.nombre || 'Sin servicio',
     align: 'left'
   },
-  { name: 'estado', label: 'Estado', field: 'estado', align: 'center' }
+  { name: 'etapa', label: 'Etapa', field: 'etapa', align: 'center' }
 ]
 
 const operacionCards = computed(() => {
@@ -321,7 +322,7 @@ const operacionCards = computed(() => {
 })
 
 const estados = computed(() => {
-  const data = dashboard.value.estado_citas || {}
+  const data = dashboard.value.etapa_citas || {}
   const total =
     Object.values(data).reduce((sum, value) => sum + Number(value || 0), 0) || 1
   return estadoFlujo.map(item => ({
@@ -337,42 +338,38 @@ const garantiasPorVencer = computed(
 const serviciosTop = computed(() => dashboard.value.servicios_top || [])
 
 const estadoFlujo = [
-  { key: 'pendiente', label: 'Pendiente', color: 'warning' },
-  { key: 'revision', label: 'En revisión', color: 'orange' },
-  { key: 'en_proceso', label: 'En proceso', color: 'info' },
-  {
-    key: 'esperando_repuesto',
-    label: 'Esperando repuesto',
-    color: 'deep-orange'
-  },
-  { key: 'terminado', label: 'Terminado', color: 'teal' },
-  { key: 'entregado', label: 'Entregado', color: 'positive' },
-  { key: 'cancelada', label: 'Cancelado', color: 'negative' }
+  { key: 'cita', label: '1. Cita agendada', color: 'primary' },
+  { key: 'diagnostico', label: '2. Diagnóstico', color: 'orange' },
+  { key: 'propuesta', label: '3. Propuesta y decisión', color: 'deep-orange' },
+  { key: 'servicio', label: '4. Servicio aceptado', color: 'info' },
+  { key: 'pago', label: '5. Pago', color: 'teal' },
+  { key: 'garantia', label: '6. Garantía', color: 'positive' },
+  { key: 'cerrada', label: 'Cerrada sin servicio', color: 'negative' }
 ]
 
-const textoEstado = estado =>
+const textoEtapa = etapa =>
   ({
-    pendiente: 'Pendiente',
-    revision: 'En revisión',
-    en_proceso: 'En proceso',
-    esperando_repuesto: 'Esperando repuesto',
-    terminado: 'Terminado',
-    entregado: 'Entregado',
-    concluida: 'Terminado',
-    cancelada: 'Cancelado'
-  })[estado] || estado
+    cita: 'Cita',
+    diagnostico: 'Diagnóstico',
+    propuesta: 'Propuesta',
+    servicio: 'Servicio',
+    pago: 'Pago',
+    garantia: 'Garantía',
+    cerrada: 'Cerrada'
+  })[etapa] ||
+  etapa ||
+  'Cita'
 
-const colorEstado = estado =>
+const colorEtapa = etapa =>
   ({
-    pendiente: 'warning',
-    revision: 'orange',
-    en_proceso: 'info',
-    esperando_repuesto: 'deep-orange',
-    terminado: 'teal',
-    entregado: 'positive',
-    concluida: 'teal',
-    cancelada: 'negative'
-  })[estado] || 'grey'
+    cita: 'primary',
+    diagnostico: 'orange',
+    propuesta: 'deep-orange',
+    servicio: 'info',
+    pago: 'teal',
+    garantia: 'positive',
+    cerrada: 'negative'
+  })[etapa] || 'grey'
 
 const formatearFecha = value =>
   value ? date.formatDate(value, 'DD/MM/YYYY') : '—'

@@ -4,7 +4,7 @@
       <div>
         <div class="text-h4 text-weight-bold text-primary">Atenciones</div>
         <div class="text-subtitle2 text-grey-7">
-          Cliente, equipo, agenda, trabajo técnico, mensajes y cobro en un solo
+          Desde la llamada del cliente hasta el pago y la garantía, en un solo
           lugar
         </div>
       </div>
@@ -25,63 +25,30 @@
       </div>
     </div>
 
-    <div class="row q-col-gutter-md q-mb-md">
-      <div class="col-12 col-md-4">
-        <q-card class="reference-card q-pa-md">
-          <div class="row items-center no-wrap">
-            <q-icon
-              name="assignment"
-              color="primary"
-              size="34px"
-              class="q-mr-md"
-            />
-            <div>
-              <div class="text-weight-bold">1. Atención</div>
-              <div class="text-caption text-grey-7"
-                >Cliente, equipo, servicio, técnico y precio.</div
-              >
-            </div>
-          </div>
-        </q-card>
-      </div>
-      <div class="col-12 col-md-4">
-        <q-card class="reference-card q-pa-md">
-          <div class="row items-center no-wrap">
-            <q-icon
-              name="engineering"
-              color="info"
-              size="34px"
-              class="q-mr-md"
-            />
-            <div>
-              <div class="text-weight-bold">2. Detalle técnico</div>
-              <div class="text-caption text-grey-7"
-                >Diagnóstico, trabajo, repuestos, garantía y
-                recomendaciones.</div
-              >
-            </div>
-          </div>
-        </q-card>
-      </div>
-      <div class="col-12 col-md-4">
-        <q-card class="reference-card q-pa-md">
-          <div class="row items-center no-wrap">
-            <q-icon
-              name="picture_as_pdf"
-              color="positive"
-              size="34px"
-              class="q-mr-md"
-            />
-            <div>
-              <div class="text-weight-bold">3. Documento</div>
-              <div class="text-caption text-grey-7"
-                >Proforma, expediente, impresión y mensaje para WhatsApp.</div
-              >
-            </div>
-          </div>
-        </q-card>
-      </div>
-    </div>
+    <q-card class="content-card workflow-map q-mb-md">
+      <q-card-section>
+        <div class="text-subtitle1 text-weight-bold q-mb-md">
+          Flujo real de atención
+        </div>
+        <div class="workflow-map__grid">
+          <button
+            v-for="(paso, index) in flujoEtapas"
+            :key="paso.value"
+            type="button"
+            class="workflow-step"
+            :class="{ 'workflow-step--active': estadoFiltro === paso.value }"
+            @click="filtrarPorEstado(paso.value)"
+          >
+            <span class="workflow-step__number">{{ index + 1 }}</span>
+            <q-icon :name="paso.icon" :color="paso.color" size="26px" />
+            <span class="workflow-step__copy">
+              <strong>{{ paso.label }}</strong>
+              <small>{{ paso.caption }}</small>
+            </span>
+          </button>
+        </div>
+      </q-card-section>
+    </q-card>
 
     <q-card class="content-card q-mb-md">
       <q-card-section class="row q-col-gutter-md items-center">
@@ -104,8 +71,8 @@
             outlined
             dense
             clearable
-            label="Filtrar estado"
-            :options="estadoOptions"
+            label="Filtrar etapa"
+            :options="flujoEtapas"
             emit-value
             map-options
             @update:model-value="cargarCitas"
@@ -139,8 +106,8 @@
       class="bg-blue-1 text-primary q-mb-md rounded-borders fast-flow-banner"
     >
       <template #avatar><q-icon name="bolt" color="primary" /></template>
-      Flujo profesional: cambia estados desde la tabla, controla pagos,
-      garantía, expediente y WhatsApp sin repetir datos.
+      Cada atención avanza en orden. Si el cliente rechaza la propuesta, se
+      cierra; si acepta, se habilitan el servicio, el cobro y la garantía.
     </q-banner>
 
     <div class="row q-col-gutter-md q-mb-md">
@@ -246,36 +213,37 @@
           </q-td>
         </template>
 
-        <template #body-cell-estado="props">
+        <template #body-cell-etapa="props">
           <q-td :props="props">
-            <q-btn-dropdown
+            <q-chip
               dense
-              unelevated
-              size="sm"
-              :color="colorEstado(props.row.estado)"
+              :color="colorEtapa(etapaCita(props.row))"
               text-color="white"
-              :icon="iconoEstado(props.row.estado)"
-              :label="textoEstado(props.row.estado)"
+              :icon="iconoEtapa(etapaCita(props.row))"
             >
-              <q-list dense style="min-width: 210px">
-                <q-item-label header>Cambiar estado</q-item-label>
-                <q-item
-                  v-for="opcion in estadoOptions"
-                  :key="opcion.value"
-                  clickable
-                  v-close-popup
-                  @click="cambiarEstadoCita(props.row, opcion.value)"
-                >
-                  <q-item-section avatar
-                    ><q-icon :name="opcion.icon" :color="opcion.color"
-                  /></q-item-section>
-                  <q-item-section>{{ opcion.label }}</q-item-section>
-                  <q-item-section v-if="props.row.estado === opcion.value" side
-                    ><q-icon name="check" color="positive"
-                  /></q-item-section>
-                </q-item>
-              </q-list>
-            </q-btn-dropdown>
+              {{ textoEtapa(etapaCita(props.row)) }}
+            </q-chip>
+            <q-linear-progress
+              class="q-mt-xs"
+              rounded
+              size="5px"
+              :value="progresoEtapa(etapaCita(props.row))"
+              :color="colorEtapa(etapaCita(props.row))"
+              track-color="grey-3"
+            />
+          </q-td>
+        </template>
+
+        <template #body-cell-decision="props">
+          <q-td :props="props">
+            <q-chip
+              dense
+              outline
+              :color="colorDecision(props.row.decision_cliente)"
+              :icon="iconoDecision(props.row.decision_cliente)"
+            >
+              {{ textoDecision(props.row.decision_cliente) }}
+            </q-chip>
           </q-td>
         </template>
 
@@ -286,7 +254,10 @@
               show-document
               show-payment
               show-whats-app
-              :show-finalize="!estadosFinales.includes(props.row.estado)"
+              :show-finalize="
+                props.row.decision_cliente === 'aceptado' &&
+                !estadosFinales.includes(props.row.estado)
+              "
               @view="abrirVer(props.row)"
               @edit="abrirEditar(props.row)"
               @technical="abrirDetalleTecnico(props.row)"
@@ -313,10 +284,10 @@
           <div class="row items-center justify-between no-wrap">
             <div>
               <div class="text-h6">{{ tituloDialogo }}</div>
-              <div class="text-caption text-blue-1"
-                >Flujo ordenado: cliente → equipo → servicio → precio →
-                documento</div
-              >
+              <div class="text-caption text-blue-1">
+                Solicitud → cita → diagnóstico → decisión → servicio → pago →
+                garantía
+              </div>
             </div>
             <q-btn flat round dense icon="close" v-close-popup />
           </div>
@@ -330,10 +301,11 @@
           indicator-color="primary"
           align="justify"
         >
-          <q-tab name="datos" icon="assignment" label="Datos" />
-          <q-tab name="trabajo" icon="build" label="Trabajo" />
-          <q-tab name="resumen" icon="receipt_long" label="Resumen" />
-          <q-tab name="pago" icon="payments" label="Pago" />
+          <q-tab name="datos" icon="event" label="1. Cita" />
+          <q-tab name="trabajo" icon="search" label="2. Diagnóstico" />
+          <q-tab name="decision" icon="rule" label="3. Decisión" />
+          <q-tab name="resumen" icon="engineering" label="4. Servicio" />
+          <q-tab name="pago" icon="payments" label="5. Pago y garantía" />
         </q-tabs>
 
         <q-separator />
@@ -484,6 +456,28 @@
                     </template>
                   </q-banner>
                 </div>
+                <div class="col-12 col-md-3">
+                  <q-select
+                    v-model="form.canal_contacto"
+                    :options="canalContactoOptions"
+                    emit-value
+                    map-options
+                    label="Contacto recibido por"
+                    outlined
+                    :readonly="modo === 'ver'"
+                  />
+                </div>
+                <div class="col-12 col-md-3">
+                  <q-select
+                    v-model="form.prioridad"
+                    :options="prioridadOptions"
+                    emit-value
+                    map-options
+                    label="Prioridad"
+                    outlined
+                    :readonly="modo === 'ver'"
+                  />
+                </div>
                 <div class="col-12 col-md-4">
                   <q-select
                     v-model="form.tecnico_id"
@@ -496,30 +490,78 @@
                     :readonly="modo === 'ver'"
                   />
                 </div>
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-3">
                   <q-input
                     v-model="form.fecha"
                     type="date"
-                    label="Fecha"
+                    label="Fecha de la cita"
                     outlined
                     :readonly="modo === 'ver'"
                   />
                 </div>
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-3">
                   <q-input
                     v-model="form.hora"
                     type="time"
-                    label="Hora"
+                    label="Hora de la cita"
                     outlined
                     :readonly="modo === 'ver'"
                   />
+                </div>
+                <div class="col-12">
+                  <q-input
+                    v-model="form.problema_reportado"
+                    type="textarea"
+                    rows="3"
+                    label="Problema informado por el cliente"
+                    outlined
+                    :readonly="modo === 'ver'"
+                    hint="Anota lo que el cliente explicó en la llamada o mensaje; todavía no es el diagnóstico."
+                  />
+                </div>
+                <div class="col-12 col-md-7">
+                  <q-input
+                    v-model="form.direccion_servicio"
+                    label="Dirección de la visita"
+                    outlined
+                    :readonly="modo === 'ver'"
+                  >
+                    <template #prepend><q-icon name="location_on" /></template>
+                  </q-input>
+                </div>
+                <div class="col-12 col-md-5">
+                  <q-input
+                    v-model="form.referencia_ubicacion"
+                    label="Referencia o enlace de Google Maps"
+                    outlined
+                    :readonly="modo === 'ver'"
+                  >
+                    <template #prepend><q-icon name="map" /></template>
+                  </q-input>
                 </div>
               </div>
             </q-tab-panel>
 
             <q-tab-panel name="trabajo" class="q-pa-none">
               <div class="row q-col-gutter-md">
-                <div class="col-12 col-md-7">
+                <div class="col-12">
+                  <q-banner rounded class="bg-blue-1 text-primary">
+                    <template #avatar><q-icon name="search" /></template>
+                    Durante la visita registra el diagnóstico técnico. Después
+                    prepara la solución y el precio que se ofrecerán al cliente.
+                    <template #action>
+                      <q-btn
+                        v-if="citaId"
+                        flat
+                        color="primary"
+                        icon="engineering"
+                        label="Abrir diagnóstico técnico"
+                        @click="abrirDetalleTecnico({ id: citaId })"
+                      />
+                    </template>
+                  </q-banner>
+                </div>
+                <div class="col-12 col-md-6">
                   <q-select
                     v-model="form.servicio_id"
                     :options="serviciosOptions"
@@ -556,26 +598,40 @@
                     </template>
                   </q-select>
                 </div>
-                <div class="col-12 col-md-3">
+                <div class="col-12 col-md-2">
                   <q-input
-                    v-model.number="form.total"
+                    v-model.number="form.costo_mano_obra"
                     type="number"
-                    label="Total"
+                    label="Mano de obra"
                     prefix="Bs"
                     outlined
                     :readonly="modo === 'ver'"
-                    hint="Se llena desde el servicio"
+                    min="0"
+                    @update:model-value="recalcularTotalForm"
                   />
                 </div>
                 <div class="col-12 col-md-2">
-                  <q-select
-                    v-model="form.estado"
-                    :options="estadoOptions"
-                    emit-value
-                    map-options
-                    label="Estado"
+                  <q-input
+                    v-model.number="form.costo_materiales"
+                    type="number"
+                    label="Materiales"
+                    prefix="Bs"
                     outlined
                     :readonly="modo === 'ver'"
+                    min="0"
+                    @update:model-value="recalcularTotalForm"
+                  />
+                </div>
+                <div class="col-12 col-md-2">
+                  <q-input
+                    v-model.number="form.descuento"
+                    type="number"
+                    label="Descuento"
+                    prefix="Bs"
+                    outlined
+                    :readonly="modo === 'ver'"
+                    min="0"
+                    @update:model-value="recalcularTotalForm"
                   />
                 </div>
                 <div v-if="servicioSeleccionado" class="col-12">
@@ -613,13 +669,35 @@
                 <div class="col-12">
                   <q-input
                     v-model="form.descripcion"
-                    label="Descripción del trabajo solicitado"
+                    label="Solución o servicio recomendado"
                     outlined
                     type="textarea"
                     rows="3"
                     :readonly="modo === 'ver'"
                     hint="Se sugiere automáticamente desde el catálogo; solo edita si hace falta"
                   />
+                </div>
+                <div class="col-12 col-md-8">
+                  <q-input
+                    v-model="form.propuesta"
+                    label="Propuesta para el cliente"
+                    outlined
+                    type="textarea"
+                    rows="3"
+                    :readonly="modo === 'ver'"
+                    hint="Resume qué se realizará, qué incluye y las condiciones ofrecidas."
+                  />
+                </div>
+                <div class="col-12 col-md-4">
+                  <q-card flat bordered class="q-pa-md total-proposal-card">
+                    <div class="text-caption text-grey-7">Total propuesto</div>
+                    <div class="text-h4 text-weight-bold text-primary">
+                      Bs {{ Number(form.total || 0).toFixed(2) }}
+                    </div>
+                    <div class="text-caption text-grey-7">
+                      Mano de obra + materiales − descuento
+                    </div>
+                  </q-card>
                 </div>
                 <div class="col-12">
                   <q-input
@@ -634,8 +712,150 @@
               </div>
             </q-tab-panel>
 
+            <q-tab-panel name="decision" class="q-pa-none">
+              <q-banner
+                v-if="!citaId"
+                rounded
+                class="bg-orange-1 text-orange-10 q-mb-md"
+              >
+                <template #avatar><q-icon name="save" /></template>
+                Primero guarda la cita y la propuesta. Luego registra la
+                respuesta del cliente sin salir de esta pantalla.
+                <template #action>
+                  <q-btn
+                    color="primary"
+                    icon="save"
+                    label="Guardar y continuar"
+                    :disable="!atencionListaParaGuardar"
+                    @click="guardarBorradorAtencion"
+                  />
+                </template>
+              </q-banner>
+
+              <template v-else>
+                <q-banner
+                  v-if="!diagnosticoRegistrado"
+                  rounded
+                  class="bg-orange-1 text-orange-10 q-mb-md"
+                >
+                  <template #avatar><q-icon name="search" /></template>
+                  Falta registrar el diagnóstico de la visita antes de guardar
+                  la decisión del cliente.
+                  <template #action>
+                    <q-btn
+                      flat
+                      color="primary"
+                      icon="engineering"
+                      label="Registrar diagnóstico"
+                      @click="abrirDetalleTecnico({ id: citaId })"
+                    />
+                  </template>
+                </q-banner>
+                <div class="row q-col-gutter-md">
+                  <div class="col-12 col-md-7">
+                    <q-card flat bordered class="q-pa-md decision-card">
+                      <div class="text-subtitle1 text-weight-bold q-mb-xs">
+                        ¿El cliente acepta la propuesta?
+                      </div>
+                      <div class="text-caption text-grey-7 q-mb-md">
+                        Esta decisión controla automáticamente lo que se puede
+                        hacer después.
+                      </div>
+                      <div class="row q-col-gutter-sm">
+                        <div
+                          v-for="opcion in decisionOptions"
+                          :key="opcion.value"
+                          class="col-12 col-sm-4"
+                        >
+                          <button
+                            type="button"
+                            class="decision-option"
+                            :class="{
+                              'decision-option--active':
+                                form.decision_cliente === opcion.value
+                            }"
+                            :disabled="modo === 'ver'"
+                            @click="form.decision_cliente = opcion.value"
+                          >
+                            <q-icon
+                              :name="opcion.icon"
+                              :color="opcion.color"
+                              size="32px"
+                            />
+                            <strong>{{ opcion.label }}</strong>
+                            <small>{{ opcion.caption }}</small>
+                          </button>
+                        </div>
+                      </div>
+
+                      <q-input
+                        v-if="form.decision_cliente === 'rechazado'"
+                        v-model="form.motivo_rechazo"
+                        class="q-mt-md"
+                        type="textarea"
+                        rows="3"
+                        outlined
+                        label="Motivo del rechazo"
+                        :readonly="modo === 'ver'"
+                      />
+
+                      <q-btn
+                        v-if="modo !== 'ver'"
+                        class="q-mt-md full-width"
+                        color="primary"
+                        icon="how_to_reg"
+                        label="Guardar decisión del cliente"
+                        @click="guardarDecision"
+                      />
+                    </q-card>
+                  </div>
+                  <div class="col-12 col-md-5">
+                    <q-card flat bordered class="q-pa-md summary-box">
+                      <div class="text-caption text-grey-7">Propuesta</div>
+                      <div class="text-body1 q-mb-md">
+                        {{
+                          form.propuesta || 'Propuesta todavía no registrada'
+                        }}
+                      </div>
+                      <q-separator class="q-my-sm" />
+                      <div class="row items-end justify-between">
+                        <span class="text-grey-7">Total ofrecido</span>
+                        <strong class="text-h5 text-primary">
+                          Bs {{ Number(form.total || 0).toFixed(2) }}
+                        </strong>
+                      </div>
+                      <q-banner
+                        rounded
+                        class="q-mt-md"
+                        :class="claseBannerDecision(form.decision_cliente)"
+                      >
+                        {{ mensajeDecision(form.decision_cliente) }}
+                      </q-banner>
+                    </q-card>
+                  </div>
+                </div>
+              </template>
+            </q-tab-panel>
+
             <q-tab-panel name="resumen" class="q-pa-none">
-              <div class="row q-col-gutter-md">
+              <q-banner
+                v-if="form.decision_cliente !== 'aceptado'"
+                rounded
+                class="bg-orange-1 text-orange-10 q-mb-md"
+              >
+                <template #avatar><q-icon name="lock" /></template>
+                El servicio se habilita únicamente cuando la propuesta está
+                marcada como <strong>aceptada</strong>.
+                <template #action>
+                  <q-btn
+                    flat
+                    color="primary"
+                    label="Ir a la decisión"
+                    @click="tabFormulario = 'decision'"
+                  />
+                </template>
+              </q-banner>
+              <div v-else class="row q-col-gutter-md">
                 <div class="col-12 col-md-7">
                   <q-card flat bordered class="summary-box q-pa-md">
                     <div class="text-subtitle1 text-weight-bold q-mb-sm"
@@ -691,20 +911,27 @@
                       >Siguiente paso recomendado</div
                     >
                     <div class="text-body2 text-grey-8">
-                      Después de guardar la atención, entra al menú de tres
-                      puntos y completa <strong>Detalle técnico</strong>. Luego
-                      podrás generar la <strong>nota/proforma</strong> o el
-                      <strong>expediente</strong> para imprimir o enviar por
-                      WhatsApp.
+                      La propuesta fue aceptada. Ahora registra el trabajo
+                      realizado, los materiales utilizados, las fotos y las
+                      recomendaciones para el cliente.
                     </div>
                     <q-btn
                       class="q-mt-md full-width"
                       color="positive"
                       outline
                       icon="engineering"
-                      label="Guardar y abrir detalle técnico"
-                      :disable="modo === 'ver' || !atencionListaParaGuardar"
+                      label="Abrir servicio técnico"
+                      :disable="!citaId"
                       @click="guardarCitaYAbrirDetalle"
+                    />
+                    <q-btn
+                      v-if="!['pago', 'garantia'].includes(form.etapa)"
+                      class="q-mt-sm full-width"
+                      color="primary"
+                      icon="task_alt"
+                      label="Finalizar servicio y pasar al pago"
+                      :disable="!citaId"
+                      @click="finalizarServicioActual"
                     />
                   </q-card>
                 </div>
@@ -727,6 +954,33 @@
                     label="Guardar y continuar al pago"
                     :disable="!atencionListaParaGuardar"
                     @click="guardarCitaYAbrirPago"
+                  />
+                </template>
+              </q-banner>
+
+              <q-banner
+                v-else-if="form.decision_cliente !== 'aceptado'"
+                rounded
+                class="bg-orange-1 text-orange-10"
+              >
+                <template #avatar><q-icon name="lock" /></template>
+                El pago permanece bloqueado hasta que el cliente acepte la
+                propuesta.
+              </q-banner>
+
+              <q-banner
+                v-else-if="!['pago', 'garantia'].includes(form.etapa)"
+                rounded
+                class="bg-blue-1 text-primary"
+              >
+                <template #avatar><q-icon name="engineering" /></template>
+                Termina y guarda el trabajo técnico antes de registrar el pago.
+                <template #action>
+                  <q-btn
+                    flat
+                    color="primary"
+                    label="Ir al servicio"
+                    @click="tabFormulario = 'resumen'"
                   />
                 </template>
               </q-banner>
@@ -788,6 +1042,20 @@
                 >
                   <template #avatar><q-icon name="verified" /></template>
                   Esta atención está completamente pagada.
+                </q-banner>
+
+                <q-banner
+                  v-if="
+                    Number(documentoResumen.saldo_pendiente || 0) <= 0 &&
+                    garantiaDocumento.aplica
+                  "
+                  rounded
+                  :class="`bg-${colorGarantia(garantiaDocumento.estado)}-1 text-${colorGarantia(garantiaDocumento.estado)} q-mb-md`"
+                >
+                  <template #avatar><q-icon name="verified" /></template>
+                  {{ garantiaDocumento.label }}: inicia
+                  {{ formatearFecha(detalleDocumento?.garantia_inicio) }} y
+                  vence {{ formatearFecha(garantiaDocumento.vence) }}.
                 </q-banner>
 
                 <div class="row items-center justify-between q-mb-md">
@@ -877,7 +1145,12 @@
               color="positive"
               outline
               icon="engineering"
-              label="Guardar y detalle"
+              :label="
+                form.decision_cliente === 'aceptado'
+                  ? 'Guardar y servicio'
+                  : 'Guardar y diagnóstico'
+              "
+              :disable="form.decision_cliente === 'rechazado'"
               @click="guardarCitaYAbrirDetalle"
             />
             <q-btn
@@ -933,6 +1206,15 @@
         </q-card-section>
 
         <q-card-section>
+          <q-banner
+            v-if="!servicioHabilitado"
+            rounded
+            class="bg-orange-1 text-orange-10 q-mb-md"
+          >
+            <template #avatar><q-icon name="lock" /></template>
+            La propuesta aún no fue aceptada. Puedes guardar el diagnóstico,
+            pero el trabajo, los materiales y la garantía permanecen bloqueados.
+          </q-banner>
           <q-banner rounded class="bg-blue-1 text-primary q-mb-md">
             <template #avatar
               ><q-icon name="auto_awesome" color="primary"
@@ -954,6 +1236,7 @@
                 color="primary"
                 :icon="preset.icon"
                 :label="preset.label"
+                :disable="!servicioHabilitado && preset.value !== 'diagnostico'"
                 @click="aplicarPlantillaDetalle(preset.value)"
               />
             </div>
@@ -1006,6 +1289,7 @@
                 rows="3"
                 outlined
                 label="Trabajo realizado"
+                :disable="!servicioHabilitado"
               />
             </div>
             <div class="col-12 col-md-6">
@@ -1015,6 +1299,7 @@
                 rows="3"
                 outlined
                 label="Repuestos / materiales usados"
+                :disable="!servicioHabilitado"
               />
             </div>
             <div class="col-12 col-md-6">
@@ -1024,6 +1309,7 @@
                 rows="3"
                 outlined
                 label="Recomendaciones para el cliente"
+                :disable="!servicioHabilitado"
               />
             </div>
 
@@ -1049,6 +1335,7 @@
                       dense
                       icon="sync"
                       label="Usar servicio"
+                      :disable="!servicioHabilitado"
                       @click="sincronizarItemPrincipalConCita"
                     />
                     <q-btn
@@ -1056,6 +1343,7 @@
                       dense
                       :outline="!edicionItemsManual"
                       icon="edit_note"
+                      :disable="!servicioHabilitado"
                       :label="
                         edicionItemsManual ? 'Ocultar edición' : 'Editar ítems'
                       "
@@ -1098,6 +1386,7 @@
                         dense
                         icon="add"
                         label="Agregar ítem"
+                        :disable="!servicioHabilitado"
                         @click="agregarItemDetalle"
                       />
                     </div>
@@ -1109,6 +1398,7 @@
                     >
                       <thead>
                         <tr>
+                          <th class="text-left">Tipo</th>
                           <th class="text-left">Cant.</th>
                           <th class="text-left">Unidad</th>
                           <th class="text-left">Descripción</th>
@@ -1122,6 +1412,16 @@
                           v-for="(item, index) in detalleForm.items"
                           :key="index"
                         >
+                          <td style="width: 140px">
+                            <q-select
+                              v-model="item.tipo"
+                              :options="tipoItemOptions"
+                              emit-value
+                              map-options
+                              dense
+                              outlined
+                            />
+                          </td>
                           <td style="width: 90px">
                             <q-input
                               v-model.number="item.cantidad"
@@ -1323,15 +1623,65 @@
               </q-card>
             </div>
 
-            <div class="col-12 col-md-5">
-              <q-input
-                v-model="detalleForm.garantia"
-                outlined
-                label="Garantía"
-                placeholder="Ej: 30 días sobre el trabajo realizado"
-              />
+            <div class="col-12">
+              <q-card flat bordered class="q-pa-md warranty-card">
+                <div class="text-subtitle2 text-weight-bold q-mb-md">
+                  Garantía del servicio
+                </div>
+                <div class="row q-col-gutter-md">
+                  <div class="col-12 col-md-3">
+                    <q-input
+                      v-model.number="detalleForm.garantia_dias"
+                      type="number"
+                      min="0"
+                      outlined
+                      label="Duración en días"
+                      @update:model-value="actualizarGarantiaDetalle"
+                      :disable="!servicioHabilitado"
+                    />
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <q-input
+                      v-model="detalleForm.garantia_inicio"
+                      type="date"
+                      outlined
+                      label="Inicio de garantía"
+                      @update:model-value="actualizarGarantiaDetalle"
+                      :disable="!servicioHabilitado"
+                    />
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <q-input
+                      :model-value="detalleForm.garantia_fin"
+                      type="date"
+                      outlined
+                      readonly
+                      label="Vencimiento"
+                    />
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <q-input
+                      v-model="detalleForm.garantia"
+                      outlined
+                      label="Resumen"
+                      placeholder="Ej: 30 días sobre el trabajo"
+                      :disable="!servicioHabilitado"
+                    />
+                  </div>
+                  <div class="col-12">
+                    <q-input
+                      v-model="detalleForm.condiciones_garantia"
+                      type="textarea"
+                      rows="2"
+                      outlined
+                      label="Condiciones y exclusiones de la garantía"
+                      :disable="!servicioHabilitado"
+                    />
+                  </div>
+                </div>
+              </q-card>
             </div>
-            <div class="col-12 col-md-7">
+            <div class="col-12">
               <q-input
                 v-model="detalleForm.observacion"
                 outlined
@@ -1375,6 +1725,14 @@
               label="Guardar detalle técnico"
               :loading="guardandoDetalle"
               @click="guardarDetalleTecnico"
+            />
+            <q-btn
+              v-if="servicioHabilitado"
+              color="primary"
+              icon="task_alt"
+              label="Guardar y pasar al pago"
+              :loading="guardandoDetalle"
+              @click="guardarDetalleYFinalizar"
             />
           </div>
         </q-card-actions>
@@ -1534,8 +1892,12 @@
                 {{ documentoCita.cliente?.telefono || 'No registrado' }}</div
               >
               <div class="nota-meta-wide"
-                ><strong>Dirección:</strong>
-                {{ documentoCita.cliente?.direccion || 'No registrada' }}</div
+                ><strong>Dirección de visita:</strong>
+                {{
+                  documentoCita.direccion_servicio ||
+                  documentoCita.cliente?.direccion ||
+                  'No registrada'
+                }}</div
               >
               <div class="nota-meta-wide"
                 ><strong>Equipo:</strong>
@@ -1578,6 +1940,10 @@
             </div>
 
             <div class="nota-total-block q-mt-md">
+              <div v-if="Number(documentoCita.descuento || 0) > 0">
+                Descuento: Bs
+                {{ Number(documentoCita.descuento || 0).toFixed(2) }}
+              </div>
               <div class="nota-total"
                 >TOTAL: Bs
                 {{ Number(totalGeneralDocumento || 0).toFixed(2) }}</div
@@ -1628,6 +1994,12 @@
                 <div class="col-12 col-md-6"
                   ><strong>Garantía:</strong>
                   {{ detalleDocumento?.garantia || 'Sin registrar' }}</div
+                >
+                <div class="col-12"
+                  ><strong>Condiciones de garantía:</strong>
+                  {{
+                    detalleDocumento?.condiciones_garantia || 'Sin registrar'
+                  }}</div
                 >
                 <div class="col-12 col-md-6"
                   ><strong>Entrega:</strong>
@@ -2053,6 +2425,102 @@ const estadoOptions = [
   { label: 'Cancelado', value: 'cancelada', color: 'negative', icon: 'cancel' }
 ]
 
+const flujoEtapas = [
+  {
+    label: 'Cita',
+    value: 'cita',
+    color: 'primary',
+    icon: 'event',
+    caption: 'Ubicación y hora'
+  },
+  {
+    label: 'Diagnóstico',
+    value: 'diagnostico',
+    color: 'orange',
+    icon: 'search',
+    caption: 'Revisión técnica'
+  },
+  {
+    label: 'Propuesta',
+    value: 'propuesta',
+    color: 'deep-orange',
+    icon: 'request_quote',
+    caption: 'Solución y precio'
+  },
+  {
+    label: 'Servicio',
+    value: 'servicio',
+    color: 'info',
+    icon: 'engineering',
+    caption: 'Solo si acepta'
+  },
+  {
+    label: 'Pago',
+    value: 'pago',
+    color: 'teal',
+    icon: 'payments',
+    caption: 'Cobro y saldo'
+  },
+  {
+    label: 'Garantía',
+    value: 'garantia',
+    color: 'positive',
+    icon: 'verified',
+    caption: 'Vigencia y seguimiento'
+  },
+  {
+    label: 'Cerrada',
+    value: 'cerrada',
+    color: 'negative',
+    icon: 'block',
+    caption: 'Rechazada o cancelada'
+  }
+]
+
+const canalContactoOptions = [
+  { label: 'Llamada', value: 'llamada' },
+  { label: 'WhatsApp', value: 'whatsapp' },
+  { label: 'Presencial', value: 'presencial' },
+  { label: 'Otro', value: 'otro' }
+]
+
+const prioridadOptions = [
+  { label: 'Baja', value: 'baja' },
+  { label: 'Normal', value: 'normal' },
+  { label: 'Alta', value: 'alta' },
+  { label: 'Urgente', value: 'urgente' }
+]
+
+const decisionOptions = [
+  {
+    label: 'Pendiente',
+    value: 'pendiente',
+    color: 'warning',
+    icon: 'hourglass_top',
+    caption: 'El cliente lo está evaluando'
+  },
+  {
+    label: 'Aceptada',
+    value: 'aceptado',
+    color: 'positive',
+    icon: 'thumb_up',
+    caption: 'Habilita el servicio'
+  },
+  {
+    label: 'Rechazada',
+    value: 'rechazado',
+    color: 'negative',
+    icon: 'thumb_down',
+    caption: 'Cierra la atención'
+  }
+]
+
+const tipoItemOptions = [
+  { label: 'Mano de obra', value: 'mano_obra' },
+  { label: 'Material', value: 'material' },
+  { label: 'Otro', value: 'otro' }
+]
+
 const metodosPagoOptions = [
   { label: 'Efectivo', value: 'efectivo' },
   { label: 'QR', value: 'qr' },
@@ -2114,10 +2582,22 @@ const formInicial = {
   equipo_id: null,
   tecnico_id: null,
   servicio_id: null,
+  canal_contacto: 'llamada',
+  prioridad: 'normal',
+  direccion_servicio: '',
+  referencia_ubicacion: '',
+  problema_reportado: '',
   fecha: date.formatDate(new Date(), 'YYYY-MM-DD'),
   hora: '08:00',
   estado: 'pendiente',
+  etapa: 'cita',
   descripcion: '',
+  propuesta: '',
+  costo_mano_obra: 0,
+  costo_materiales: 0,
+  descuento: 0,
+  decision_cliente: 'pendiente',
+  motivo_rechazo: '',
   total: 0,
   observacion: ''
 }
@@ -2129,6 +2609,10 @@ const detalleInicial = {
   trabajo_realizado: '',
   estado_equipo: 'reparado',
   garantia: '',
+  garantia_dias: 0,
+  garantia_inicio: date.formatDate(new Date(), 'YYYY-MM-DD'),
+  garantia_fin: '',
+  condiciones_garantia: '',
   recomendaciones: '',
   fecha_entrega: date.formatDate(new Date(), 'YYYY-MM-DD'),
   repuestos: '',
@@ -2214,6 +2698,17 @@ const detalleDocumento = computed(
     documentoCita.value?.detalleTecnico ||
     null
 )
+const servicioHabilitado = computed(
+  () => citaDetalle.value?.decision_cliente === 'aceptado'
+)
+const diagnosticoRegistrado = computed(() => {
+  const detalle =
+    form.value.detalle_tecnico ||
+    form.value.detalleTecnico ||
+    citaDetalle.value?.detalle_tecnico ||
+    citaDetalle.value?.detalleTecnico
+  return Boolean(String(detalle?.diagnostico || '').trim())
+})
 const evidenciasDocumento = computed(() =>
   Array.isArray(detalleDocumento.value?.evidencias)
     ? detalleDocumento.value.evidencias
@@ -2235,9 +2730,11 @@ const totalItemsDocumento = computed(() =>
   )
 )
 const totalGeneralDocumento = computed(() =>
-  totalItemsDocumento.value > 0
-    ? totalItemsDocumento.value
-    : Number(documentoResumen.value.total || documentoCita.value?.total || 0)
+  Number(
+    documentoResumen.value.total ??
+      documentoCita.value?.total ??
+      totalItemsDocumento.value
+  )
 )
 const montoLiteralDocumento = computed(() =>
   montoEnLiteral(totalGeneralDocumento.value)
@@ -2247,11 +2744,9 @@ const garantiaDocumento = computed(() =>
   resumenGarantia(detalleDocumento.value || {})
 )
 const resumenEstados = computed(() =>
-  estadoOptions.map(estado => ({
+  flujoEtapas.map(estado => ({
     ...estado,
-    total: citas.value.filter(
-      cita => normalizarEstadoDashboard(cita.estado) === estado.value
-    ).length
+    total: citas.value.filter(cita => etapaCita(cita) === estado.value).length
   }))
 )
 
@@ -2278,6 +2773,13 @@ const columns = [
     sortable: true
   },
   {
+    name: 'ubicacion',
+    label: 'Dirección de visita',
+    field: row =>
+      row.direccion_servicio || row.cliente?.direccion || 'Sin dirección',
+    align: 'left'
+  },
+  {
     name: 'equipo',
     label: 'Equipo',
     field: row => resumenEquipo(row.equipo),
@@ -2290,10 +2792,9 @@ const columns = [
     align: 'left'
   },
   {
-    name: 'detalle',
-    label: 'Detalle',
-    field: row =>
-      row.detalle_tecnico || row.detalleTecnico ? 'Listo' : 'Pendiente',
+    name: 'decision',
+    label: 'Decisión',
+    field: 'decision_cliente',
     align: 'center'
   },
   {
@@ -2310,7 +2811,7 @@ const columns = [
     align: 'center',
     sortable: true
   },
-  { name: 'estado', label: 'Estado', field: 'estado', align: 'center' }
+  { name: 'etapa', label: 'Etapa', field: 'etapa', align: 'center' }
 ]
 
 const tituloDialogo = computed(() => {
@@ -2319,17 +2820,50 @@ const tituloDialogo = computed(() => {
   return 'Detalle de la atención'
 })
 
-const normalizarEstadoDashboard = estado =>
-  estado === 'concluida' ? 'terminado' : estado
+const etapaCita = cita => {
+  if (cita?.etapa) return cita.etapa
+  if (cita?.estado === 'cancelada') return 'cerrada'
+  if (['terminado', 'entregado', 'concluida'].includes(cita?.estado))
+    return 'pago'
+  if (['en_proceso', 'esperando_repuesto'].includes(cita?.estado))
+    return 'servicio'
+  if (cita?.estado === 'revision') return 'diagnostico'
+  return 'cita'
+}
+const textoEtapa = etapa =>
+  flujoEtapas.find(item => item.value === etapa)?.label || 'Cita'
+const colorEtapa = etapa =>
+  flujoEtapas.find(item => item.value === etapa)?.color || 'primary'
+const iconoEtapa = etapa =>
+  flujoEtapas.find(item => item.value === etapa)?.icon || 'event'
+const progresoEtapa = etapa => {
+  const index = flujoEtapas.findIndex(item => item.value === etapa)
+  if (index < 0) return 1 / flujoEtapas.length
+  if (etapa === 'cerrada') return 1
+  return (index + 1) / (flujoEtapas.length - 1)
+}
+const textoDecision = decision =>
+  decisionOptions.find(item => item.value === decision)?.label || 'Pendiente'
+const colorDecision = decision =>
+  decisionOptions.find(item => item.value === decision)?.color || 'warning'
+const iconoDecision = decision =>
+  decisionOptions.find(item => item.value === decision)?.icon || 'hourglass_top'
+const mensajeDecision = decision => {
+  if (decision === 'aceptado')
+    return 'Servicio habilitado: ya puedes registrar el trabajo y el cobro.'
+  if (decision === 'rechazado')
+    return 'Atención cerrada: no se habilitarán servicio ni pago.'
+  return 'La propuesta sigue pendiente. Servicio y pago permanecen bloqueados.'
+}
+const claseBannerDecision = decision => {
+  if (decision === 'aceptado') return 'bg-green-1 text-positive'
+  if (decision === 'rechazado') return 'bg-red-1 text-negative'
+  return 'bg-orange-1 text-orange-10'
+}
 const textoEstado = estado =>
   estadoLegacyOptions.find(item => item.value === estado)?.label ||
   estado ||
   'Sin estado'
-const colorEstado = estado =>
-  estadoLegacyOptions.find(item => item.value === estado)?.color || 'grey'
-const iconoEstado = estado =>
-  estadoLegacyOptions.find(item => item.value === estado)?.icon ||
-  'radio_button_unchecked'
 const normalizarHora = hora => (hora ? String(hora).slice(0, 5) : '')
 const nombreSeleccionado = (lista, id) =>
   lista.find(item => Number(item.id) === Number(id))?.nombre
@@ -2369,8 +2903,11 @@ const sumarDiasFecha = (fechaBase, dias) => {
 }
 
 const resumenGarantia = detalle => {
-  const dias = extraerDiasGarantia(detalle?.garantia)
-  const vence = sumarDiasFecha(detalle?.fecha_entrega, dias)
+  const dias =
+    Number(detalle?.garantia_dias || 0) ||
+    extraerDiasGarantia(detalle?.garantia)
+  const inicio = detalle?.garantia_inicio || detalle?.fecha_entrega
+  const vence = detalle?.garantia_fin || sumarDiasFecha(inicio, dias)
   if (!dias || !vence)
     return {
       aplica: false,
@@ -2395,14 +2932,17 @@ const resumenGarantia = detalle => {
 
 const citasVisibles = computed(() => {
   const vista = vistaFiltro.value
-  if (!vista) return citas.value
+  const citasPorEtapa = estadoFiltro.value
+    ? citas.value.filter(cita => etapaCita(cita) === estadoFiltro.value)
+    : citas.value
+  if (!vista) return citasPorEtapa
 
   const hoy = date.formatDate(new Date(), 'YYYY-MM-DD')
   const mes = hoy.slice(0, 7)
   const pagosPagados = cita =>
     (cita?.pagos || []).filter(pago => pago.estado === 'pagado')
 
-  return citas.value.filter(cita => {
+  return citasPorEtapa.filter(cita => {
     if (vista === 'hoy') return String(cita.fecha || '').slice(0, 10) === hoy
     if (vista === 'abiertos') return !estadosFinales.includes(cita.estado || '')
     if (vista === 'cobros_pendientes') return saldoCita(cita) > 0
@@ -2489,6 +3029,7 @@ const urlEvidencia = (evidencia, detalle = null, index = 0) => {
 }
 
 const crearItemProforma = (overrides = {}) => ({
+  tipo: overrides.tipo ?? 'mano_obra',
   cantidad: overrides.cantidad ?? 1,
   unidad: overrides.unidad ?? 'un.',
   descripcion: overrides.descripcion ?? '',
@@ -2511,6 +3052,7 @@ const sanitizarItems = items =>
         )
         .map(item =>
           crearItemProforma({
+            tipo: item.tipo || 'mano_obra',
             cantidad: Number(item.cantidad || 0),
             unidad: item.unidad || 'un.',
             descripcion: item.descripcion || '',
@@ -2525,18 +3067,38 @@ const sanitizarItems = items =>
 
 const crearItemDesdeCita = cita =>
   crearItemProforma({
+    tipo: 'mano_obra',
     cantidad: 1,
     unidad: 'serv.',
     descripcion:
       cita?.servicio?.nombre || cita?.descripcion || 'Servicio técnico',
-    precio_unitario: Number(cita?.total || cita?.servicio?.precio || 0)
+    precio_unitario: Number(
+      cita?.costo_mano_obra || cita?.servicio?.precio || cita?.total || 0
+    )
   })
+
+const crearItemsDesdeCita = cita => {
+  const items = [crearItemDesdeCita(cita)]
+  const materiales = Number(cita?.costo_materiales || 0)
+  if (materiales > 0) {
+    items.push(
+      crearItemProforma({
+        tipo: 'material',
+        cantidad: 1,
+        unidad: 'lote',
+        descripcion: 'Materiales y repuestos estimados',
+        precio_unitario: materiales
+      })
+    )
+  }
+  return items
+}
 
 const obtenerItemsDocumento = cita => {
   if (!cita) return []
   const detalle = cita.detalle_tecnico || cita.detalleTecnico || {}
   const items = sanitizarItems(detalle.items)
-  return items.length ? items : [crearItemDesdeCita(cita)]
+  return items.length ? items : crearItemsDesdeCita(cita)
 }
 
 const actualizarSubtotalItem = item => {
@@ -2553,6 +3115,15 @@ const eliminarItemDetalle = index => {
 }
 
 const prepararItemsParaGuardar = () => sanitizarItems(detalleForm.value.items)
+
+const actualizarGarantiaDetalle = () => {
+  const dias = Math.max(Number(detalleForm.value.garantia_dias || 0), 0)
+  const inicio = detalleForm.value.garantia_inicio
+  detalleForm.value.garantia_fin = sumarDiasFecha(inicio, dias) || ''
+  if (dias > 0 && !detalleForm.value.garantia) {
+    detalleForm.value.garantia = `${dias} días sobre el trabajo realizado`
+  }
+}
 
 const unidades = [
   '',
@@ -2670,7 +3241,16 @@ const prepararFormulario = item => ({
   cliente_id: item.cliente_id || item.cliente?.id || null,
   equipo_id: item.equipo_id || item.equipo?.id || null,
   tecnico_id: item.tecnico_id || item.tecnico?.id || null,
-  servicio_id: item.servicio_id || item.servicio?.id || null
+  servicio_id: item.servicio_id || item.servicio?.id || null,
+  canal_contacto: item.canal_contacto || 'llamada',
+  prioridad: item.prioridad || 'normal',
+  direccion_servicio: item.direccion_servicio || item.cliente?.direccion || '',
+  etapa: etapaCita(item),
+  decision_cliente: item.decision_cliente || 'pendiente',
+  costo_mano_obra: Number(item.costo_mano_obra || item.total || 0),
+  costo_materiales: Number(item.costo_materiales || 0),
+  descuento: Number(item.descuento || 0),
+  total: Number(item.total || 0)
 })
 
 const cargarCombos = async () => {
@@ -2700,8 +3280,7 @@ const cargarCitas = async () => {
   try {
     const response = await api.get('/citas', {
       params: {
-        buscar: buscar.value || undefined,
-        estado: estadoFiltro.value || undefined
+        buscar: buscar.value || undefined
       }
     })
     citas.value = response.data.data || []
@@ -2759,6 +3338,10 @@ const seleccionarCliente = () => {
   if (!equipoActualPerteneceAlCliente) {
     form.value.equipo_id =
       equiposCliente.length === 1 ? equiposCliente[0].id : null
+  }
+
+  if (!form.value.direccion_servicio && clienteSeleccionado.value?.direccion) {
+    form.value.direccion_servicio = clienteSeleccionado.value.direccion
   }
 }
 
@@ -2907,18 +3490,26 @@ const seleccionarServicio = value => {
     item => Number(item.id) === Number(value)
   )
   if (!servicio) return
-  form.value.total = Number(servicio.precio || 0)
+  form.value.costo_mano_obra = Number(servicio.precio || 0)
+  recalcularTotalForm()
   if (!form.value.descripcion) usarDescripcionServicio(servicio)
+}
+
+const recalcularTotalForm = () => {
+  form.value.total = Math.max(
+    Number(form.value.costo_mano_obra || 0) +
+      Number(form.value.costo_materiales || 0) -
+      Number(form.value.descuento || 0),
+    0
+  )
 }
 
 const sincronizarItemPrincipalConCita = () => {
   if (!citaDetalle.value) return
-  detalleForm.value.items = [
-    crearItemDesdeCita({
-      ...citaDetalle.value,
-      total: Number(citaDetalle.value.total || 0)
-    })
-  ]
+  detalleForm.value.items = crearItemsDesdeCita({
+    ...citaDetalle.value,
+    total: Number(citaDetalle.value.total || 0)
+  })
 }
 
 const aplicarPlantillaDetalle = tipo => {
@@ -2932,6 +3523,7 @@ const aplicarPlantillaDetalle = tipo => {
       recomendaciones:
         'Realizar mantenimiento preventivo cada 3 a 6 meses, según uso del equipo.',
       garantia: '30 días sobre el trabajo realizado',
+      garantia_dias: 30,
       estado_equipo: 'reparado'
     },
     correctivo: {
@@ -2940,6 +3532,7 @@ const aplicarPlantillaDetalle = tipo => {
       recomendaciones:
         'Mantener seguimiento del funcionamiento del equipo y reportar cualquier anomalía.',
       garantia: '30 días sobre el trabajo realizado',
+      garantia_dias: 30,
       estado_equipo: 'reparado'
     },
     instalacion: {
@@ -2949,6 +3542,7 @@ const aplicarPlantillaDetalle = tipo => {
       recomendaciones:
         'Evitar manipular conexiones y realizar mantenimiento preventivo según uso.',
       garantia: '30 días sobre instalación',
+      garantia_dias: 30,
       estado_equipo: 'entregado'
     },
     diagnostico: {
@@ -2958,6 +3552,7 @@ const aplicarPlantillaDetalle = tipo => {
       recomendaciones:
         'Proceder según diagnóstico técnico y presupuesto aprobado por el cliente.',
       garantia: '',
+      garantia_dias: 0,
       estado_equipo: 'pendiente_revision'
     }
   }
@@ -2965,11 +3560,16 @@ const aplicarPlantillaDetalle = tipo => {
   const plantilla = plantillas[tipo]
   if (!plantilla) return
   detalleForm.value = { ...detalleForm.value, ...plantilla }
+  detalleForm.value.garantia_inicio =
+    detalleForm.value.garantia_inicio ||
+    detalleForm.value.fecha_entrega ||
+    date.formatDate(new Date(), 'YYYY-MM-DD')
+  actualizarGarantiaDetalle()
   sincronizarItemPrincipalConCita()
 }
 
 const irTabSiguiente = () => {
-  const tabs = ['datos', 'trabajo', 'resumen', 'pago']
+  const tabs = ['datos', 'trabajo', 'decision', 'resumen', 'pago']
   const actual = tabs.indexOf(tabFormulario.value)
   if (actual >= 0 && actual < tabs.length - 1) {
     tabFormulario.value = tabs[actual + 1]
@@ -2977,7 +3577,7 @@ const irTabSiguiente = () => {
 }
 
 const irTabAnterior = () => {
-  const tabs = ['datos', 'trabajo', 'resumen', 'pago']
+  const tabs = ['datos', 'trabajo', 'decision', 'resumen', 'pago']
   const actual = tabs.indexOf(tabFormulario.value)
   if (actual > 0) tabFormulario.value = tabs[actual - 1]
 }
@@ -3041,6 +3641,70 @@ const guardarCitaYAbrirPago = () => {
   guardarCita()
 }
 
+const guardarBorradorAtencion = async () => {
+  if (!form.value.cliente_id || !form.value.fecha) {
+    $q.notify({ type: 'warning', message: 'Cliente y fecha son obligatorios' })
+    tabFormulario.value = 'datos'
+    return
+  }
+
+  recalcularTotalForm()
+  try {
+    const response = citaId.value
+      ? await api.put(`/citas/${citaId.value}`, form.value)
+      : await api.post('/citas', form.value)
+    const citaGuardada = response.data.data
+    citaId.value = citaGuardada.id
+    modo.value = 'editar'
+    form.value = prepararFormulario(citaGuardada)
+    tabFormulario.value = 'decision'
+    await cargarCitas()
+    $q.notify({
+      type: 'positive',
+      message: 'Cita y propuesta guardadas. Registra ahora la decisión.'
+    })
+  } catch (err) {
+    $q.notify({
+      type: 'negative',
+      message: extraerMensajeError(err, 'No se pudo guardar la atención')
+    })
+  }
+}
+
+const guardarDecision = async () => {
+  if (!citaId.value) return
+  if (
+    form.value.decision_cliente === 'rechazado' &&
+    !String(form.value.motivo_rechazo || '').trim()
+  ) {
+    $q.notify({
+      type: 'warning',
+      message: 'Escribe el motivo del rechazo para cerrar la atención.'
+    })
+    return
+  }
+
+  recalcularTotalForm()
+  try {
+    await api.put(`/citas/${citaId.value}`, form.value)
+    const response = await api.put(`/citas/${citaId.value}/decision`, {
+      decision_cliente: form.value.decision_cliente,
+      motivo_rechazo: form.value.motivo_rechazo || null
+    })
+    form.value = prepararFormulario(response.data.data)
+    await cargarCitas()
+    $q.notify({ type: 'positive', message: response.data.mensaje })
+    if (form.value.decision_cliente === 'aceptado') {
+      tabFormulario.value = 'resumen'
+    }
+  } catch (err) {
+    $q.notify({
+      type: 'negative',
+      message: extraerMensajeError(err, 'No se pudo guardar la decisión')
+    })
+  }
+}
+
 const guardarCita = async () => {
   if (!form.value.cliente_id || !form.value.fecha) {
     $q.notify({ type: 'warning', message: 'Cliente y fecha son obligatorios' })
@@ -3050,6 +3714,7 @@ const guardarCita = async () => {
     return
   }
 
+  recalcularTotalForm()
   try {
     const response =
       modo.value === 'crear'
@@ -3094,9 +3759,14 @@ const abrirDetalleTecnico = async item => {
         detalle.tecnico_id || cita.tecnico_id || cita.tecnico?.id || null,
       fecha_entrega:
         detalle.fecha_entrega || date.formatDate(new Date(), 'YYYY-MM-DD'),
-      items: itemsDetalle.length ? itemsDetalle : [crearItemDesdeCita(cita)],
+      garantia_inicio:
+        detalle.garantia_inicio ||
+        detalle.fecha_entrega ||
+        date.formatDate(new Date(), 'YYYY-MM-DD'),
+      items: itemsDetalle.length ? itemsDetalle : crearItemsDesdeCita(cita),
       evidencias: Array.isArray(detalle.evidencias) ? detalle.evidencias : []
     }
+    actualizarGarantiaDetalle()
     dialogoDetalle.value = true
   } catch (err) {
     $q.notify({
@@ -3113,6 +3783,7 @@ const guardarDetalleTecnico = async ({
   if (!detalleForm.value.cita_id) return false
   guardandoDetalle.value = true
   try {
+    actualizarGarantiaDetalle()
     detalleForm.value.items = prepararItemsParaGuardar()
     const response = await api.post('/detalle-tecnicos', detalleForm.value)
     const detalleGuardado = response.data.data
@@ -3130,6 +3801,10 @@ const guardarDetalleTecnico = async ({
       citaDetalle.value.detalle_tecnico = detalleForm.value
       citaDetalle.value.detalleTecnico = detalleForm.value
     }
+    if (Number(citaId.value) === Number(detalleForm.value.cita_id)) {
+      form.value.detalle_tecnico = detalleForm.value
+      form.value.detalleTecnico = detalleForm.value
+    }
     if (mostrarMensaje)
       $q.notify({
         type: 'positive',
@@ -3146,6 +3821,29 @@ const guardarDetalleTecnico = async ({
     return false
   } finally {
     guardandoDetalle.value = false
+  }
+}
+
+const guardarDetalleYFinalizar = async () => {
+  const guardado = await guardarDetalleTecnico({ mostrarMensaje: false })
+  if (!guardado || !detalleForm.value.cita_id) return
+
+  try {
+    await api.put(`/citas/${detalleForm.value.cita_id}/finalizar`)
+    dialogoDetalle.value = false
+    await cargarCitas()
+    $q.notify({
+      type: 'positive',
+      message: 'Servicio guardado y finalizado. Ya puedes registrar el pago.'
+    })
+  } catch (err) {
+    $q.notify({
+      type: 'negative',
+      message: extraerMensajeError(
+        err,
+        'El detalle se guardó, pero no se pudo finalizar el servicio.'
+      )
+    })
   }
 }
 
@@ -3262,19 +3960,25 @@ const abrirDocumentoDesdeDetalle = async () => {
   tipoDocumento.value = 'expediente'
 }
 
-const cambiarEstadoCita = async (item, estado) => {
-  if (!item?.id || !estado || item.estado === estado) return
+const finalizarServicioActual = async () => {
+  if (!citaId.value) return
   try {
-    await api.put(`/citas/${item.id}/estado`, { estado })
+    const response = await api.put(`/citas/${citaId.value}/finalizar`)
+    form.value = prepararFormulario(response.data.data)
+    documentoPayload.value = await cargarDocumento(citaId.value)
+    await cargarCitas()
+    tabFormulario.value = 'pago'
     $q.notify({
       type: 'positive',
-      message: `Estado cambiado a ${textoEstado(estado)}`
+      message: 'Servicio finalizado. El pago quedó habilitado.'
     })
-    await cargarCitas()
   } catch (err) {
     $q.notify({
       type: 'negative',
-      message: extraerMensajeError(err, 'No se pudo cambiar el estado')
+      message: extraerMensajeError(
+        err,
+        'No se pudo finalizar el servicio. Verifica el trabajo realizado.'
+      )
     })
   }
 }
@@ -3340,7 +4044,7 @@ const mensajeWhatsapp = (cita, tipo = 'resumen') => {
     (sum, item) => sum + Number(item.subtotal || 0),
     0
   )
-  const total = Number(totalItems || cita.total || 0).toFixed(2)
+  const total = Number(cita.total ?? totalItems ?? 0).toFixed(2)
   const pagado = Number(
     (cita.pagos || [])
       .filter(pago => pago.estado === 'pagado')
@@ -3455,8 +4159,8 @@ const generarHtmlDocumento = () => {
     (sum, item) => sum + Number(item.subtotal || 0),
     0
   )
-  const totalCalculado =
-    totalItems > 0 ? totalItems : Number(resumen.total || cita.total || 0)
+  const totalCalculado = Number(resumen.total ?? cita.total ?? totalItems ?? 0)
+  const descuento = Number(cita.descuento || 0)
   const total = Number(totalCalculado || 0).toFixed(2)
   const pagado = Number(resumen.monto_pagado || 0).toFixed(2)
   const saldo = Math.max(
@@ -3569,7 +4273,7 @@ const generarHtmlDocumento = () => {
       <div><strong>Fecha:</strong> ${escapeHtml(formatearFecha(cita.fecha) || formatearFecha(new Date()))}</div>
       <div><strong>Cliente:</strong> ${escapeHtml(cita.cliente?.nombre || 'Sin cliente')}</div>
       <div><strong>Teléfono:</strong> ${escapeHtml(cita.cliente?.telefono || 'No registrado')}</div>
-      <div><strong>Dirección:</strong> ${escapeHtml(cita.cliente?.direccion || 'No registrada')}</div>
+      <div><strong>Dirección de visita:</strong> ${escapeHtml(cita.direccion_servicio || cita.cliente?.direccion || 'No registrada')}</div>
       <div><strong>Equipo:</strong> ${escapeHtml(resumenEquipo(cita.equipo))}${cita.equipo?.serie ? ` · Serie: ${escapeHtml(cita.equipo.serie)}` : ''}</div>
     </div>
 
@@ -3585,6 +4289,7 @@ const generarHtmlDocumento = () => {
       <tbody>${filasItems}</tbody>
     </table>
 
+    ${descuento > 0 ? `<div class="payment">Descuento aplicado: Bs ${descuento.toFixed(2)}</div>` : ''}
     <div class="total">TOTAL: Bs ${total}</div>
     <div class="literal"><strong>SON:</strong> ${escapeHtml(montoEnLiteral(Number(total)))}</div>
     <div class="payment">Pagado: Bs ${pagado} · Saldo pendiente: Bs ${saldo}</div>
@@ -3599,6 +4304,7 @@ const generarHtmlDocumento = () => {
       ${fila('Estado del equipo', textoEstadoEquipo(detalle.estado_equipo))}
       ${fila('Repuestos', detalle.repuestos)}
       ${fila('Garantía', detalle.garantia)}
+      ${fila('Condiciones de garantía', detalle.condiciones_garantia)}
       ${fila('Fecha entrega', formatearFecha(detalle.fecha_entrega))}
       ${garantiaInfo.aplica ? fila('Vence garantía', `${formatearFecha(garantiaInfo.vence)} · ${garantiaInfo.label}`) : ''}
       <div class="text"><strong>Recomendaciones:</strong> ${escapeHtml(detalle.recomendaciones || 'Sin registrar')}</div>
@@ -3651,12 +4357,21 @@ const imprimirDocumento = () => {
 }
 
 onMounted(async () => {
+  const etapaDesdePanel = String(route.query.etapa || '')
   const estadoDesdePanel = String(route.query.estado || '')
-  if (
-    estadoOptions.some(opcion => opcion.value === estadoDesdePanel) ||
-    estadoDesdePanel === 'concluida'
-  ) {
-    estadoFiltro.value = estadoDesdePanel
+  const etapaLegacy = {
+    pendiente: 'cita',
+    revision: 'diagnostico',
+    en_proceso: 'servicio',
+    esperando_repuesto: 'servicio',
+    terminado: 'pago',
+    concluida: 'pago',
+    entregado: 'garantia',
+    cancelada: 'cerrada'
+  }[estadoDesdePanel]
+  const etapaInicial = etapaDesdePanel || etapaLegacy
+  if (flujoEtapas.some(opcion => opcion.value === etapaInicial)) {
+    estadoFiltro.value = etapaInicial
   }
 
   const vistaDesdePanel = String(route.query.vista || '')
@@ -3689,6 +4404,93 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.workflow-map {
+  overflow: hidden;
+  border: 1px solid rgba(25, 118, 210, 0.14);
+  background: linear-gradient(135deg, #ffffff 0%, #f3faff 100%);
+}
+.workflow-map__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(145px, 1fr));
+  gap: 10px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+}
+.workflow-step {
+  position: relative;
+  display: flex;
+  min-width: 145px;
+  min-height: 76px;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 10px;
+  border: 1px solid rgba(15, 76, 129, 0.14);
+  border-radius: 14px;
+  color: #163447;
+  text-align: left;
+  background: #ffffff;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.workflow-step:hover,
+.workflow-step--active {
+  transform: translateY(-2px);
+  border-color: var(--q-primary);
+  box-shadow: 0 8px 20px rgba(15, 76, 129, 0.12);
+}
+.workflow-step__number {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  color: rgba(15, 76, 129, 0.34);
+  font-size: 12px;
+  font-weight: 800;
+}
+.workflow-step__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+.workflow-step__copy small {
+  color: #667b8a;
+  line-height: 1.2;
+}
+.decision-option {
+  display: flex;
+  width: 100%;
+  min-height: 132px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid #d6e2ea;
+  border-radius: 14px;
+  color: #244052;
+  text-align: center;
+  background: #ffffff;
+  cursor: pointer;
+}
+.decision-option small {
+  color: #6b7f8d;
+}
+.decision-option:hover,
+.decision-option--active {
+  border-color: var(--q-primary);
+  background: #eef8ff;
+  box-shadow: 0 8px 18px rgba(15, 76, 129, 0.1);
+}
+.decision-option:disabled {
+  cursor: default;
+}
+.total-proposal-card,
+.warranty-card {
+  height: 100%;
+  background: linear-gradient(145deg, #ffffff 0%, #f4fbfd 100%);
+}
 .fast-flow-banner {
   border: 1px solid rgba(25, 118, 210, 0.16);
 }
