@@ -7,14 +7,6 @@
           Catálogos, personal, accesos e integraciones en un solo lugar
         </div>
       </div>
-      <q-btn
-        outline
-        color="primary"
-        icon="refresh"
-        label="Comprobar integraciones"
-        :loading="loading"
-        @click="cargarEstado"
-      />
     </div>
 
     <q-banner rounded class="bg-blue-1 text-primary q-mb-md">
@@ -111,39 +103,19 @@
               <div class="q-ml-md">
                 <div class="text-h6 text-weight-bold">WhatsApp Business</div>
                 <div class="text-body2 text-grey-7 q-mt-xs">
-                  Estado de Meta Cloud API para enviar y recibir mensajes.
+                  Prepara mensajes y ábrelos en la aplicación para confirmar el
+                  envío.
                 </div>
               </div>
             </div>
           </q-card-section>
           <q-card-section>
-            <div class="row q-gutter-sm">
-              <q-chip
-                :color="whatsapp.configurado ? 'positive' : 'warning'"
-                text-color="white"
-                :icon="whatsapp.configurado ? 'check_circle' : 'pending'"
-              >
-                {{
-                  whatsapp.configurado ? 'Envío configurado' : 'Envío pendiente'
-                }}
-              </q-chip>
-              <q-chip
-                :color="whatsapp.webhook_configurado ? 'positive' : 'warning'"
-                text-color="white"
-                :icon="whatsapp.webhook_configurado ? 'sync' : 'sync_disabled'"
-              >
-                {{
-                  whatsapp.webhook_configurado
-                    ? 'Webhook configurado'
-                    : 'Webhook pendiente'
-                }}
-              </q-chip>
-            </div>
+            <q-chip color="positive" text-color="white" icon="check_circle">
+              Listo para usar
+            </q-chip>
             <div class="text-caption text-grey-7 q-mt-sm">
-              API {{ whatsapp.version || 'sin verificar' }}
-              <span v-if="whatsapp.numero_id_mascara">
-                · Número {{ whatsapp.numero_id_mascara }}
-              </span>
+              Funciona con WhatsApp y WhatsApp Business, sin conectar Meta ni
+              guardar claves privadas.
             </div>
           </q-card-section>
           <q-space />
@@ -151,8 +123,8 @@
             <q-btn
               v-if="esAdministrador"
               color="positive"
-              icon="link"
-              :label="whatsapp.conectado ? 'Ver conexión' : 'Conectar WhatsApp'"
+              icon="tune"
+              label="Ver funcionamiento"
               to="/whatsapp"
             />
             <q-btn
@@ -167,15 +139,11 @@
       </div>
     </div>
 
-    <q-banner v-if="error" rounded class="bg-orange-1 text-orange-10 q-mt-md">
-      {{ error }}
-    </q-banner>
   </q-page>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import api, { extraerMensajeError } from '../services/api.js'
+import { computed, ref } from 'vue'
 import { obtenerUsuario } from '../services/auth.js'
 import {
   activarNotificaciones,
@@ -185,9 +153,6 @@ import {
 import { useQuasar } from 'quasar'
 
 const $q = useQuasar()
-const loading = ref(false)
-const error = ref('')
-const whatsapp = ref({})
 const notificacionesHabilitadas = ref(notificacionesActivas())
 const esAdministrador = computed(
   () => obtenerUsuario()?.rol === 'administrador'
@@ -227,22 +192,6 @@ const opciones = computed(() => [
     : [])
 ])
 
-const cargarEstado = async () => {
-  loading.value = true
-  error.value = ''
-  try {
-    const { data } = await api.get('/integraciones/whatsapp/estado')
-    whatsapp.value = data || {}
-  } catch (err) {
-    error.value = extraerMensajeError(
-      err,
-      'No se pudo comprobar WhatsApp en este momento.'
-    )
-  } finally {
-    loading.value = false
-  }
-}
-
 const habilitarNotificaciones = async () => {
   const resultado = await activarNotificaciones()
   notificacionesHabilitadas.value = resultado.activas
@@ -251,8 +200,6 @@ const habilitarNotificaciones = async () => {
     message: resultado.mensaje
   })
 }
-
-onMounted(cargarEstado)
 </script>
 
 <style scoped>

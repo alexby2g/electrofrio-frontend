@@ -1,5 +1,5 @@
 <template>
-  <q-page class="q-pa-md whatsapp-page">
+  <q-page class="whatsapp-page q-pa-md q-pa-lg-lg">
     <q-btn
       flat
       no-caps
@@ -11,153 +11,172 @@
     />
 
     <section class="whatsapp-hero q-mb-lg">
-      <div>
-        <div class="text-h4 text-weight-bold text-white">WhatsApp Business</div>
-        <div class="text-subtitle1 text-white opacity-90">
-          Conecta la cuenta oficial de Electro Frío con el sistema.
+      <div class="col min-width-0">
+        <div class="row items-center q-gutter-sm q-mb-sm">
+          <q-chip
+            color="white"
+            text-color="positive"
+            icon="check_circle"
+            label="Listo para usar"
+          />
+        </div>
+        <div class="text-h4 text-weight-bold text-white">
+          WhatsApp Business
+        </div>
+        <div class="text-subtitle1 text-white hero-copy">
+          Prepara mensajes con la información de Electro Frío y ábrelos en la
+          aplicación para confirmar el envío.
         </div>
       </div>
-
-      <q-icon name="chat" size="64px" color="white" />
+      <q-icon name="chat" size="70px" color="white" class="hero-icon" />
     </section>
 
     <div class="row q-col-gutter-lg">
       <div class="col-12 col-lg-7">
-        <q-card class="panel-card">
-          <q-card-section
-            class="row items-center justify-between q-col-gutter-md"
-          >
-            <div class="col">
-              <div class="text-h6 text-weight-bold">Estado de la conexión</div>
-              <div class="text-body2 text-grey-7">
-                Usa el flujo seguro de Meta para autorizar la cuenta de WhatsApp
-                Business.
-              </div>
-            </div>
-
-            <div class="col-auto">
-              <q-chip
-                :color="statusColor"
-                text-color="white"
-                :icon="statusIcon"
-                :label="statusLabel"
-              />
+        <q-card flat bordered class="panel-card full-height">
+          <q-card-section>
+            <div class="text-overline text-positive">Modo simple y seguro</div>
+            <div class="text-h5 text-weight-bold">Como funcionará</div>
+            <div class="text-body2 text-grey-7 q-mt-xs">
+              Electro Frío prepara el texto, conserva el seguimiento y abre
+              WhatsApp Business. Tú revisas el mensaje y tocas Enviar.
             </div>
           </q-card-section>
 
           <q-separator />
 
-          <q-card-section>
-            <q-banner
-              v-if="lastError"
-              rounded
-              class="bg-red-1 text-red-9 q-mb-md"
-            >
-              <template #avatar>
-                <q-icon name="error" color="negative" />
-              </template>
-              {{ lastError }}
-            </q-banner>
-
-            <q-banner
-              v-if="status === 'authorized'"
-              rounded
-              class="bg-orange-1 text-orange-10 q-mb-md"
-            >
-              <template #avatar>
-                <q-icon name="warning" color="orange" />
-              </template>
-              Meta autorizó la cuenta, pero falta guardar la conexión en el
-              backend.
-            </q-banner>
-
-            <div class="connection-box q-mb-lg">
-              <q-avatar
-                size="74px"
-                color="green-1"
-                text-color="green-8"
-                icon="phone_in_talk"
-              />
-
-              <div class="connection-copy">
-                <div class="text-h6 text-weight-bold">Electro Frío</div>
-                <div class="text-body2 text-grey-7">
-                  Configuración de coexistencia con la aplicación WhatsApp
-                  Business.
-                </div>
+          <q-card-section class="steps-grid">
+            <article v-for="paso in pasos" :key="paso.numero" class="step-card">
+              <div class="step-number">{{ paso.numero }}</div>
+              <q-icon :name="paso.icono" color="primary" size="34px" />
+              <div class="text-subtitle1 text-weight-bold q-mt-sm">
+                {{ paso.titulo }}
               </div>
-            </div>
+              <div class="text-body2 text-grey-7">{{ paso.detalle }}</div>
+            </article>
+          </q-card-section>
 
-            <q-btn
-              unelevated
-              no-caps
-              size="lg"
-              icon="link"
-              :label="connectButtonLabel"
-              class="connect-btn full-width"
-              :loading="connecting"
-              :disable="!sdkReady || connecting || status === 'connected'"
-              @click="connectWhatsApp"
-            />
-
-            <div
-              v-if="!sdkReady"
-              class="text-caption text-grey-7 text-center q-mt-sm"
-            >
-              Preparando conexión segura con Meta...
-            </div>
+          <q-card-section class="q-pt-none">
+            <q-banner rounded class="bg-green-1 text-green-10">
+              <template #avatar>
+                <q-icon name="verified_user" color="positive" />
+              </template>
+              No necesitas conectar Meta, compartir una contraseña ni guardar
+              claves de WhatsApp en Electro Frío. El envío final siempre se
+              confirma en tu aplicación.
+            </q-banner>
           </q-card-section>
         </q-card>
       </div>
 
       <div class="col-12 col-lg-5">
-        <q-card class="panel-card details-card">
+        <q-card flat bordered class="panel-card composer-card">
           <q-card-section>
-            <div class="text-h6 text-weight-bold q-mb-md"
-              >Datos de la integración</div
+            <div class="text-overline text-primary">Prueba rápida</div>
+            <div class="text-h6 text-weight-bold">Preparar un mensaje</div>
+            <div class="text-caption text-grey-7">
+              Puedes verificar ahora mismo cómo se abrirá en WhatsApp Business.
+            </div>
+          </q-card-section>
+
+          <q-separator />
+
+          <q-card-section class="q-gutter-md">
+            <q-input
+              v-model.trim="form.telefono"
+              outlined
+              label="Teléfono / WhatsApp"
+              placeholder="73907925"
+              inputmode="tel"
+              clearable
             >
+              <template #prepend><q-icon name="phone_iphone" /></template>
+            </q-input>
 
-            <q-list separator>
-              <q-item>
-                <q-item-section avatar>
-                  <q-icon name="verified_user" color="primary" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Aplicación de Meta</q-item-label>
-                  <q-item-label caption>Electro Frío</q-item-label>
-                </q-item-section>
-              </q-item>
+            <q-input
+              v-model.trim="form.nombre"
+              outlined
+              label="Nombre del cliente"
+              placeholder="Ej.: Carolina"
+              @update:model-value="actualizarPlantilla"
+            >
+              <template #prepend><q-icon name="person_outline" /></template>
+            </q-input>
 
-              <q-item>
-                <q-item-section avatar>
-                  <q-icon name="settings" color="primary" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Configuración</q-item-label>
-                  <q-item-label caption>Electro Frío Coexistencia</q-item-label>
-                </q-item-section>
-              </q-item>
+            <q-select
+              v-model="form.plantilla"
+              outlined
+              emit-value
+              map-options
+              :options="opcionesPlantilla"
+              label="Tipo de mensaje"
+              @update:model-value="actualizarPlantilla"
+            >
+              <template #prepend><q-icon name="auto_awesome" /></template>
+            </q-select>
 
-              <q-item v-if="wabaId">
-                <q-item-section avatar>
-                  <q-icon name="business" color="primary" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Cuenta de WhatsApp Business</q-item-label>
-                  <q-item-label caption>{{ wabaId }}</q-item-label>
-                </q-item-section>
-              </q-item>
+            <q-input
+              v-model="form.mensaje"
+              outlined
+              type="textarea"
+              autogrow
+              label="Vista previa del mensaje"
+              :input-style="{ minHeight: '140px' }"
+            />
 
-              <q-item v-if="phoneNumberId">
-                <q-item-section avatar>
-                  <q-icon name="smartphone" color="primary" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Número autorizado</q-item-label>
-                  <q-item-label caption>{{ phoneNumberId }}</q-item-label>
-                </q-item-section>
-              </q-item>
-            </q-list>
+            <q-btn
+              unelevated
+              no-caps
+              color="positive"
+              icon="open_in_new"
+              label="Abrir en WhatsApp Business"
+              class="full-width action-btn"
+              @click="abrirPrueba"
+            />
+          </q-card-section>
+        </q-card>
+      </div>
+    </div>
+
+    <div class="row q-col-gutter-lg q-mt-xs">
+      <div class="col-12 col-md-6">
+        <q-card flat bordered class="shortcut-card">
+          <q-card-section class="row items-center no-wrap q-gutter-md">
+            <q-avatar color="blue-1" text-color="primary" icon="assignment" />
+            <div class="col min-width-0">
+              <div class="text-subtitle1 text-weight-bold">
+                Mensajes desde una atención
+              </div>
+              <div class="text-body2 text-grey-7">
+                Envía resumen, aviso de trabajo terminado, cobro o garantía con
+                los datos ya registrados.
+              </div>
+            </div>
+            <q-btn flat round color="primary" icon="arrow_forward" to="/citas" />
+          </q-card-section>
+        </q-card>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <q-card flat bordered class="shortcut-card">
+          <q-card-section class="row items-center no-wrap q-gutter-md">
+            <q-avatar color="green-1" text-color="positive" icon="forum" />
+            <div class="col min-width-0">
+              <div class="text-subtitle1 text-weight-bold">
+                Conversaciones y seguimiento
+              </div>
+              <div class="text-body2 text-grey-7">
+                Escribe desde Mensajes, guarda una copia en Electro Frío y abre
+                WhatsApp Business para enviarla.
+              </div>
+            </div>
+            <q-btn
+              flat
+              round
+              color="positive"
+              icon="arrow_forward"
+              to="/mensajes"
+            />
           </q-card-section>
         </q-card>
       </div>
@@ -165,402 +184,178 @@
   </q-page>
 </template>
 
-<script>
-import api, { extraerMensajeError } from '../services/api.js'
+<script setup>
+import { computed, reactive } from 'vue'
+import { useQuasar } from 'quasar'
+import { abrirWhatsAppBusiness } from '../services/whatsapp.js'
 
-const META_APP_ID = import.meta.env.QCLI_META_APP_ID || '1681991026216392'
-const META_CONFIG_ID = import.meta.env.QCLI_META_CONFIG_ID || '1026971116821532'
-const META_GRAPH_VERSION = import.meta.env.QCLI_META_GRAPH_VERSION || 'v26.0'
-const CONNECT_PATH =
-  import.meta.env.QCLI_WHATSAPP_CONNECT_PATH ||
-  '/integraciones/whatsapp/conectar'
-const STATUS_PATH =
-  import.meta.env.QCLI_WHATSAPP_STATUS_PATH || '/integraciones/whatsapp/estado'
-const FACEBOOK_SDK_URL = 'https://connect.facebook.net/es_LA/sdk.js'
-const ALLOWED_META_ORIGINS = new Set([
-  'https://www.facebook.com',
-  'https://web.facebook.com',
-  'https://business.facebook.com'
-])
-const EMBEDDED_SIGNUP_FINISH_EVENTS = new Set([
-  'FINISH',
-  'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING'
-])
+const $q = useQuasar()
 
-let facebookSdkPromise = null
-
-function loadFacebookSdk() {
-  if (typeof window === 'undefined') {
-    return Promise.reject(
-      new Error('El SDK de Meta solo puede cargarse en el navegador.')
-    )
+const pasos = [
+  {
+    numero: '1',
+    icono: 'person_search',
+    titulo: 'Elige al cliente',
+    detalle: 'El sistema utiliza el teléfono guardado en su ficha o atención.'
+  },
+  {
+    numero: '2',
+    icono: 'edit_note',
+    titulo: 'Revisa el mensaje',
+    detalle: 'Puedes usar una plantilla y modificar el texto antes de abrirlo.'
+  },
+  {
+    numero: '3',
+    icono: 'send',
+    titulo: 'Confirma el envío',
+    detalle: 'WhatsApp Business se abre con el destinatario y el texto listos.'
   }
+]
 
-  if (window.FB) return Promise.resolve(window.FB)
-  if (facebookSdkPromise) return facebookSdkPromise
+const form = reactive({
+  telefono: '',
+  nombre: '',
+  plantilla: 'bienvenida',
+  mensaje: ''
+})
 
-  facebookSdkPromise = new Promise((resolve, reject) => {
-    if (!document.getElementById('fb-root')) {
-      const root = document.createElement('div')
-      root.id = 'fb-root'
-      document.body.prepend(root)
-    }
+const nombreCliente = computed(() => form.nombre || 'cliente')
+const plantillas = computed(() => ({
+  bienvenida: `Hola ${nombreCliente.value}, le saluda Electro Frío. ¿En qué podemos ayudarle con su equipo?`,
+  confirmar: `Hola ${nombreCliente.value}, le escribimos de Electro Frío para confirmar su atención técnica. Por favor, indíquenos si mantiene disponible el horario acordado.`,
+  camino: `Hola ${nombreCliente.value}, el técnico de Electro Frío ya se encuentra en camino hacia la dirección registrada.`,
+  terminado: `Hola ${nombreCliente.value}, le informamos que el trabajo de su equipo ya está terminado. Podemos coordinar la entrega y el pago pendiente.`,
+  seguimiento: `Hola ${nombreCliente.value}, le escribimos de Electro Frío para saber si el equipo continúa funcionando correctamente después del servicio.`
+}))
 
-    window.fbAsyncInit = () => {
-      window.FB.init({
-        appId: META_APP_ID,
-        autoLogAppEvents: true,
-        xfbml: false,
-        version: META_GRAPH_VERSION
-      })
+const opcionesPlantilla = [
+  { label: 'Primer contacto', value: 'bienvenida' },
+  { label: 'Confirmar atención', value: 'confirmar' },
+  { label: 'Técnico en camino', value: 'camino' },
+  { label: 'Trabajo terminado', value: 'terminado' },
+  { label: 'Seguimiento del servicio', value: 'seguimiento' }
+]
 
-      resolve(window.FB)
-    }
-
-    const existingScript = document.getElementById('facebook-jssdk')
-    if (existingScript) {
-      existingScript.addEventListener(
-        'error',
-        () => reject(new Error('No se pudo cargar Meta SDK.')),
-        {
-          once: true
-        }
-      )
-      return
-    }
-
-    const script = document.createElement('script')
-    script.id = 'facebook-jssdk'
-    script.src = FACEBOOK_SDK_URL
-    script.async = true
-    script.defer = true
-    script.onerror = () => {
-      facebookSdkPromise = null
-      reject(new Error('No se pudo cargar Meta SDK.'))
-    }
-
-    document.head.appendChild(script)
-  })
-
-  return facebookSdkPromise
+const actualizarPlantilla = () => {
+  form.mensaje = plantillas.value[form.plantilla] || ''
 }
 
-export default {
-  name: 'WhatsAppPage',
-
-  data() {
-    return {
-      sdkReady: false,
-      connecting: false,
-      savingConnection: false,
-      status: 'disconnected',
-      authorizationCode: null,
-      lastError: '',
-      wabaId: null,
-      phoneNumberId: null,
-      businessId: null
-    }
-  },
-
-  computed: {
-    statusLabel() {
-      const labels = {
-        disconnected: 'No conectado',
-        authorizing: 'Autorizando',
-        authorized: 'Autorizado en Meta',
-        connected: 'Conectado',
-        error: 'Error'
-      }
-
-      return labels[this.status] || 'No conectado'
-    },
-
-    statusColor() {
-      const colors = {
-        disconnected: 'grey-7',
-        authorizing: 'blue-7',
-        authorized: 'orange-8',
-        connected: 'green-7',
-        error: 'red-7'
-      }
-
-      return colors[this.status] || 'grey-7'
-    },
-
-    statusIcon() {
-      const icons = {
-        disconnected: 'link_off',
-        authorizing: 'sync',
-        authorized: 'hourglass_top',
-        connected: 'check_circle',
-        error: 'error'
-      }
-
-      return icons[this.status] || 'link_off'
-    },
-
-    connectButtonLabel() {
-      if (this.status === 'connected') return 'WhatsApp Business conectado'
-      if (this.status === 'authorized') return 'Volver a guardar la conexión'
-      return 'Conectar WhatsApp Business'
-    }
-  },
-
-  async mounted() {
-    window.addEventListener('message', this.handleEmbeddedSignupMessage)
-
-    try {
-      await loadFacebookSdk()
-      this.sdkReady = true
-    } catch (error) {
-      this.status = 'error'
-      this.lastError = error.message
-    }
-
-    await this.loadConnectionStatus()
-  },
-
-  beforeUnmount() {
-    window.removeEventListener('message', this.handleEmbeddedSignupMessage)
-    this.authorizationCode = null
-  },
-
-  methods: {
-    async loadConnectionStatus() {
-      try {
-        const response = await api.get(STATUS_PATH)
-        const data = response.data?.data || response.data || {}
-
-        if (
-          data.connected === true ||
-          data.conectado === true ||
-          data.status === 'connected'
-        ) {
-          this.status = 'connected'
-          this.wabaId = data.waba_id || data.wabaId || null
-          this.phoneNumberId =
-            data.phone_number_id || data.phoneNumberId || null
-          this.businessId = data.business_id || data.businessId || null
-        }
-      } catch (error) {
-        this.lastError = extraerMensajeError(
-          error,
-          'No se pudo comprobar el estado de WhatsApp.'
-        )
-      }
-    },
-
-    handleEmbeddedSignupMessage(event) {
-      if (!ALLOWED_META_ORIGINS.has(event.origin)) return
-
-      let payload = event.data
-
-      if (typeof payload === 'string') {
-        try {
-          payload = JSON.parse(payload)
-        } catch {
-          return
-        }
-      }
-
-      if (!payload || payload.type !== 'WA_EMBEDDED_SIGNUP') return
-
-      if (EMBEDDED_SIGNUP_FINISH_EVENTS.has(payload.event)) {
-        const data = payload.data || {}
-
-        this.wabaId = data.waba_id || data.wabaId || null
-        this.phoneNumberId = data.phone_number_id || data.phoneNumberId || null
-        this.businessId = data.business_id || data.businessId || null
-
-        if (this.status !== 'connected') this.status = 'authorized'
-        this.saveConnection()
-        return
-      }
-
-      if (payload.event === 'CANCEL') {
-        this.connecting = false
-        this.status = 'disconnected'
-        this.authorizationCode = null
-        this.$q.notify({
-          type: 'warning',
-          message: 'La conexión con WhatsApp Business fue cancelada.'
-        })
-        return
-      }
-
-      if (payload.event === 'ERROR') {
-        const data = payload.data || {}
-        this.connecting = false
-        this.status = 'error'
-        this.lastError =
-          data.error_message ||
-          data.message ||
-          'Meta informó un error durante la conexión.'
-      }
-    },
-
-    async connectWhatsApp() {
-      this.connecting = true
-      this.status = 'authorizing'
-      this.lastError = ''
-      this.authorizationCode = null
-      this.wabaId = null
-      this.phoneNumberId = null
-      this.businessId = null
-
-      try {
-        const FB = await loadFacebookSdk()
-
-        FB.login(
-          response => {
-            const code = response?.authResponse?.code
-
-            if (!code) {
-              if (this.status === 'authorizing') this.status = 'disconnected'
-              this.connecting = false
-              this.$q.notify({
-                type: 'warning',
-                message:
-                  'Meta no devolvió la autorización. Revisa si cerraste la ventana o cancelaste el proceso.'
-              })
-              return
-            }
-
-            this.authorizationCode = code
-            if (this.status !== 'connected') this.status = 'authorized'
-            this.saveConnection()
-          },
-          {
-            config_id: META_CONFIG_ID,
-            response_type: 'code',
-            override_default_response_type: true,
-            extras: {
-              featureType: 'whatsapp_business_app_onboarding',
-              setup: {},
-              sessionInfoVersion: '3'
-            }
-          }
-        )
-      } catch (error) {
-        this.connecting = false
-        this.status = 'error'
-        this.lastError =
-          error.message || 'No se pudo iniciar la conexión con Meta.'
-      }
-    },
-
-    async saveConnection() {
-      if (!this.authorizationCode || this.savingConnection) return
-
-      this.savingConnection = true
-
-      try {
-        const response = await api.post(CONNECT_PATH, {
-          code: this.authorizationCode,
-          config_id: META_CONFIG_ID,
-          waba_id: this.wabaId,
-          phone_number_id: this.phoneNumberId,
-          business_id: this.businessId
-        })
-
-        const data = response.data?.data || response.data || {}
-        this.status = 'connected'
-        this.lastError = ''
-        this.wabaId = data.waba_id || data.wabaId || this.wabaId
-        this.phoneNumberId =
-          data.phone_number_id || data.phoneNumberId || this.phoneNumberId
-        this.businessId = data.business_id || data.businessId || this.businessId
-
-        this.$q.notify({
-          type: 'positive',
-          message: 'WhatsApp Business quedó conectado con Electro Frío.'
-        })
-      } catch (error) {
-        this.status = 'authorized'
-        this.lastError = extraerMensajeError(
-          error,
-          'Meta autorizó la cuenta, pero el backend todavía no pudo guardar la conexión.'
-        )
-
-        this.$q.notify({
-          type: 'warning',
-          message:
-            'La autorización llegó correctamente. Falta completar la conexión en el backend.'
-        })
-      } finally {
-        this.authorizationCode = null
-        this.connecting = false
-        this.savingConnection = false
-      }
-    }
+const abrirPrueba = () => {
+  try {
+    abrirWhatsAppBusiness(form.telefono, form.mensaje)
+  } catch (error) {
+    $q.notify({
+      type: 'warning',
+      message: error.message
+    })
   }
 }
+
+actualizarPlantilla()
 </script>
 
 <style scoped>
 .whatsapp-page {
   min-height: 100vh;
+  background: #f2f7f9;
 }
 
-.whatsapp-hero {
-  background: linear-gradient(135deg, #0d47a1, #087f5b, #25d366);
-  border-radius: 28px;
-  padding: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 16px 40px rgba(8, 127, 91, 0.24);
-}
-
-.opacity-90 {
-  opacity: 0.9;
-}
-
-.panel-card {
-  border-radius: 24px;
-  box-shadow: 0 14px 35px rgba(13, 71, 161, 0.12);
-  overflow: hidden;
-}
-
-.details-card {
-  height: 100%;
-}
-
-.connection-box {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 22px;
-  border: 1px solid #dce7f4;
-  border-radius: 20px;
-  background: linear-gradient(135deg, #f8fbff, #effaf4);
-}
-
-.connection-copy {
+.min-width-0 {
   min-width: 0;
 }
 
-.connect-btn {
-  min-height: 56px;
-  border-radius: 16px;
-  color: white;
-  background: linear-gradient(135deg, #087f5b, #25d366);
+.whatsapp-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 30px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, #0d47a1, #087f5b, #25d366);
+  box-shadow: 0 16px 40px rgba(8, 127, 91, 0.24);
+}
+
+.hero-copy {
+  max-width: 720px;
+  opacity: 0.94;
+}
+
+.hero-icon {
+  flex: 0 0 auto;
+}
+
+.panel-card,
+.shortcut-card {
+  border-radius: 24px;
+  background: white;
+  box-shadow: 0 12px 32px rgba(31, 67, 91, 0.08);
+  overflow: hidden;
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.step-card {
+  position: relative;
+  min-height: 190px;
+  padding: 20px;
+  border: 1px solid #dce7f4;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #ffffff, #f7fbff);
+}
+
+.step-number {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  color: #0d47a1;
+  font-size: 28px;
+  font-weight: 900;
+  opacity: 0.16;
+}
+
+.composer-card {
+  height: 100%;
+}
+
+.action-btn {
+  min-height: 52px;
+  border-radius: 14px;
   font-weight: 800;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 800px) {
+  .whatsapp-page {
+    padding: 14px !important;
+  }
+
   .whatsapp-hero {
+    align-items: flex-start;
     padding: 22px;
     border-radius: 22px;
   }
 
   .whatsapp-hero .text-h4 {
-    font-size: 26px;
+    font-size: 28px;
   }
 
-  .connection-box {
+  .hero-icon {
+    display: none;
+  }
+
+  .steps-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .step-card {
+    min-height: 0;
+  }
+
+  .shortcut-card .q-card__section {
     align-items: flex-start;
-    padding: 18px;
   }
 }
 </style>
