@@ -12,10 +12,10 @@
       <div class="row items-center q-gutter-sm">
         <q-chip
           dense
-          :color="colorEstadoWhatsApp"
-          :text-color="whatsappEstado.conectado ? 'white' : 'grey-9'"
-          :icon="whatsappEstado.conectado ? 'check_circle' : 'settings'"
-          :label="textoEstadoWhatsApp"
+          color="positive"
+          text-color="white"
+          icon="check_circle"
+          label="WhatsApp Business listo"
         />
         <q-btn
           unelevated
@@ -177,7 +177,7 @@
                   </a>
                   <div class="row items-center justify-end q-gutter-xs q-mt-xs">
                     <q-icon
-                      v-if="mensaje.canal === 'whatsapp'"
+                      v-if="String(mensaje.canal || '').startsWith('whatsapp')"
                       name="chat"
                       color="green-7"
                       size="15px"
@@ -218,7 +218,7 @@
               accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx"
               max-file-size="10485760"
               class="attachment-input"
-              :disable="canal === 'whatsapp'"
+              :disable="canal === 'whatsapp_manual'"
             >
               <template #prepend><q-icon name="attach_file" /></template>
             </q-file>
@@ -253,9 +253,7 @@
             />
             <div
               class="text-caption q-ml-md"
-              :class="
-                whatsappEstado.conectado ? 'text-positive' : 'text-grey-7'
-              "
+              :class="canal === 'whatsapp_manual' ? 'text-positive' : 'text-grey-7'"
             >
               {{ ayudaWhatsApp }}
             </div>
@@ -360,7 +358,7 @@
               label="Tipo de conversación"
               :options="[
                 { label: 'Interna', value: 'interna' },
-                { label: 'WhatsApp', value: 'whatsapp' }
+                { label: 'WhatsApp Business', value: 'whatsapp' }
               ]"
             />
             <q-input
@@ -436,6 +434,10 @@ import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import api, { extraerMensajeError } from '../services/api.js'
 import { obtenerUsuario } from '../services/auth.js'
+import {
+  abrirWhatsAppBusiness,
+  crearEnlaceWhatsApp
+} from '../services/whatsapp.js'
 
 const $q = useQuasar()
 const usuario = obtenerUsuario()
@@ -454,14 +456,6 @@ const dialogoNueva = ref(false)
 const citas = ref([])
 const cargandoCitas = ref(false)
 const creando = ref(false)
-const whatsappEstado = reactive({
-  cargando: true,
-  configurado: false,
-  conectado: false,
-  webhook_configurado: false,
-  version: null,
-  numero_id_mascara: null
-})
 let temporizador = null
 
 const nueva = reactive({
@@ -502,53 +496,26 @@ const saldoPendiente = computed(() => {
 const opcionesCanal = computed(() => [
   { label: 'Interno', value: 'interno', icon: 'forum' },
   {
-    label: 'WhatsApp',
-    value: 'whatsapp',
-    icon: 'chat',
-    disable: !whatsappEstado.conectado
+    label: 'WhatsApp Business',
+    value: 'whatsapp_manual',
+    icon: 'chat'
   }
 ])
 
 const envioDeshabilitado = computed(
-  () =>
-    (!nuevoMensaje.value.trim() && !archivo.value) ||
-    (canal.value === 'whatsapp' && !whatsappEstado.conectado)
+  () => !nuevoMensaje.value.trim() && !archivo.value
 )
 
-const textoEstadoWhatsApp = computed(() => {
-  if (whatsappEstado.cargando) return 'Comprobando WhatsApp'
-  if (whatsappEstado.conectado && whatsappEstado.webhook_configurado) {
-    return 'WhatsApp conectado'
-  }
-  if (whatsappEstado.conectado) return 'Envío activo · webhook pendiente'
-  if (whatsappEstado.configurado) return 'Credenciales sin conexión'
-  return 'WhatsApp no configurado'
-})
-
-const colorEstadoWhatsApp = computed(() => {
-  if (whatsappEstado.cargando) return 'blue-grey-2'
-  if (whatsappEstado.conectado && whatsappEstado.webhook_configurado)
-    return 'positive'
-  if (whatsappEstado.conectado || whatsappEstado.configurado) return 'warning'
-  return 'grey-3'
-})
-
 const ayudaWhatsApp = computed(() => {
-  if (whatsappEstado.cargando) return 'Comprobando la conexión con Meta…'
-  if (whatsappEstado.conectado && whatsappEstado.webhook_configurado) {
-    return `Meta conectado${whatsappEstado.numero ? ` · ${whatsappEstado.numero}` : ''}.`
+  if (canal.value === 'whatsapp_manual') {
+    return 'Se guardará una copia y se abrirá WhatsApp Business para confirmar el envío.'
   }
-  if (whatsappEstado.conectado) {
-    return 'El envío está activo; falta completar el webhook de recepción.'
-  }
-  if (whatsappEstado.configurado) {
-    return 'Meta rechazó las credenciales o no respondió. Revisa el token y el número.'
-  }
-  return 'Usa el chat interno hasta agregar las credenciales de Meta en Render.'
+
+  return 'El mensaje quedará guardado solamente dentro de Electro Frío.'
 })
 
 onMounted(async () => {
-  await Promise.all([cargarIntegracionWhatsApp(), cargarConversaciones()])
+  await cargarConversaciones()
   temporizador = window.setInterval(actualizar, 5000)
 })
 
@@ -580,28 +547,6 @@ const cargarConversaciones = async () => {
   }
 }
 
-const cargarIntegracionWhatsApp = async () => {
-  whatsappEstado.cargando = true
-  try {
-    const { data } = await api.get('/integraciones/whatsapp/estado')
-    Object.assign(whatsappEstado, data)
-  } catch {
-    whatsappEstado.configurado = false
-    whatsappEstado.conectado = false
-    whatsappEstado.webhook_configurado = false
-  } finally {
-    whatsappEstado.cargando = false
-    if (!whatsappEstado.conectado && canal.value === 'whatsapp') {
-      canal.value = 'interno'
-    } else if (
-      whatsappEstado.conectado &&
-      conversacionActiva.value?.tipo === 'whatsapp'
-    ) {
-      canal.value = 'whatsapp'
-    }
-  }
-}
-
 const seleccionarConversacion = async item => {
   conversacionActiva.value = item
   cargandoMensajes.value = true
@@ -611,9 +556,7 @@ const seleccionarConversacion = async item => {
     conversacionActiva.value = data.conversacion
     mensajes.value = data.mensajes
     canal.value =
-      data.conversacion.tipo === 'whatsapp' && whatsappEstado.conectado
-        ? 'whatsapp'
-        : 'interno'
+      data.conversacion.tipo === 'whatsapp' ? 'whatsapp_manual' : 'interno'
     await api.post(`/conversaciones/${item.id}/leer`)
     item.no_leidos = 0
     await desplazarAlFinal()
@@ -658,12 +601,38 @@ const actualizar = async () => {
 const enviarMensaje = async () => {
   if ((!nuevoMensaje.value.trim() && !archivo.value) || enviando.value) return
 
+  const esWhatsApp = canal.value === 'whatsapp_manual'
+  const texto = nuevoMensaje.value.trim()
+  const telefono =
+    conversacionActiva.value?.cita?.cliente?.telefono ||
+    conversacionActiva.value?.canal_externo_id
+  let ventanaWhatsApp = null
+
+  if (esWhatsApp) {
+    if (archivo.value) {
+      errorEnvio.value =
+        'Para enviar un archivo, ábrelo directamente desde WhatsApp Business.'
+      return
+    }
+
+    try {
+      crearEnlaceWhatsApp(telefono, texto)
+      ventanaWhatsApp = window.open('', '_blank')
+      if (ventanaWhatsApp) {
+        ventanaWhatsApp.opener = null
+        ventanaWhatsApp.document.title = 'Abriendo WhatsApp Business…'
+      }
+    } catch (error) {
+      errorEnvio.value = error.message
+      return
+    }
+  }
+
   enviando.value = true
   errorEnvio.value = ''
   const formData = new FormData()
   formData.append('canal', canal.value)
-  if (nuevoMensaje.value.trim())
-    formData.append('contenido', nuevoMensaje.value.trim())
+  if (texto) formData.append('contenido', texto)
   if (archivo.value) formData.append('archivo', archivo.value)
 
   try {
@@ -672,14 +641,27 @@ const enviarMensaje = async () => {
       formData
     )
     mensajes.value.push(data.data)
+
+    if (esWhatsApp) {
+      abrirWhatsAppBusiness(telefono, texto, ventanaWhatsApp)
+      $q.notify({
+        type: 'positive',
+        message:
+          'Mensaje preparado. Confirma el envío dentro de WhatsApp Business.'
+      })
+    }
+
     nuevoMensaje.value = ''
     archivo.value = null
     await desplazarAlFinal()
     await cargarConversaciones()
   } catch (error) {
+    if (ventanaWhatsApp && !ventanaWhatsApp.closed) ventanaWhatsApp.close()
     errorEnvio.value = extraerMensajeError(
       error,
-      'No se pudo enviar el mensaje.'
+      esWhatsApp
+        ? 'No se pudo preparar el mensaje para WhatsApp Business.'
+        : 'No se pudo enviar el mensaje.'
     )
   } finally {
     enviando.value = false
@@ -727,6 +709,7 @@ const desplazarAlFinal = async () => {
 
 const esMio = mensaje => Number(mensaje.remitente_id) === Number(usuario?.id)
 const iconoEstadoMensaje = mensaje => {
+  if (mensaje.canal === 'whatsapp_manual') return 'open_in_new'
   if (mensaje.canal !== 'whatsapp') return 'done'
 
   return (
@@ -740,6 +723,7 @@ const iconoEstadoMensaje = mensaje => {
   )
 }
 const colorEstadoMensaje = mensaje => {
+  if (mensaje.canal === 'whatsapp_manual') return 'green-7'
   if (mensaje.canal !== 'whatsapp') return 'blue-grey-5'
 
   return (
@@ -753,6 +737,9 @@ const colorEstadoMensaje = mensaje => {
   )
 }
 const textoEstadoMensaje = mensaje => {
+  if (mensaje.canal === 'whatsapp_manual') {
+    return 'Preparado y abierto en WhatsApp Business para confirmar el envío'
+  }
   if (mensaje.canal !== 'whatsapp') return 'Guardado en el chat interno'
 
   return (
@@ -969,6 +956,16 @@ const colorEstado = estado => estados[estado]?.[1] || 'grey'
 
   .channel-row {
     align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .channel-row .text-caption {
+    margin-left: 0 !important;
+  }
+
+  .chat-composer .q-btn-toggle {
+    max-width: 100%;
   }
 }
 </style>
